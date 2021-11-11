@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import ndarray
-from typing import Tuple, List, NamedTuple
+from typing import Tuple, List
+from __future__ import annotations
 
 # Position = NamedTuple[int,int]
 
