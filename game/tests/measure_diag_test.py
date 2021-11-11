@@ -1,4 +1,4 @@
-from board import *
+from metrics import *
 
 def test_row1():
     g = np.array([
@@ -6,7 +6,6 @@ def test_row1():
         [1, 0, 0],
         [1, 1, 0]
         ])
-    print(g)    
     assert measure_row(g, 1) == 2
 
 def test_row2():
@@ -15,7 +14,6 @@ def test_row2():
         [1, 3, 0],
         [1, 1, 1]
         ])
-    print(g)    
     assert measure_row(g, 1) == 3
 
 def test_row3():
@@ -24,7 +22,6 @@ def test_row3():
         [1, 0, 1],
         [1, 0, 1]
         ])
-    print(g)    
     assert measure_row(g, 1) == 2
 
 
@@ -34,7 +31,6 @@ def test_row4():
         [1, 1, 0],
         [1, 0, 1]
         ])
-    print(g)    
     assert measure_row(g, 1) == 2
 
 def test_row5():
@@ -43,5 +39,4 @@ def test_row5():
         [1, 0, 0],
         [0, 0, 1]
         ])
-    print(g)    
     assert measure_row(g, 1) == 1
