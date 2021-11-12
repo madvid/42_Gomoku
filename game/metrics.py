@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple, NamedTuple
 import numpy as np
-from numpy import ndarray
 
 BLACK = 1
 WHITE = -1
@@ -38,7 +37,7 @@ def measure_row(grid: np.ndarray, color: int) -> List[Row]:
             # Incorrect color.
             else:
                 if len_ < 2:
-                    start_j += 1
+                    start_j = j+1
                     len_ = 0
                 else:
                     rows.append(Row(len_, (start_i, start_j)))
@@ -54,18 +53,40 @@ def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     return cols
     
 
-def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
-    diags = []
-    for d in range(len(grid)):
-        len_ = 0
-        for i in range(d, len(grid)):
-            for j in range(d, len(grid)):
-                if grid[d+i, d+j] == color:
-                    len_ += 1
-                    max_len = len_ if len_ > max_len else max_len
-                else:
-                    len_ = 0
-    return max_len    
+# def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
+#     diags = []
+#     height, width = grid.shape
+#     for d in range(len(grid)):
+#         len_ = 0
+#         start_i, start_j = d, d
+#         for i in range(d, len(grid)):
+#             # Correct color found.
+#             if grid[d+i, d+i] == color:
+#                 len_ += 1
+#                 # Case: end of line
+#                 if len_ > 1 and (d+i == width-1):
+#                     diags.append(Diagonal(len_, (start_i, start_j)))
+#                     len_ = 0
+#             # Incorrect color.
+#             else:
+#                 if len_ < 2:
+#                     start_j += 1
+#                     len_ = 0
+#                 else:
+#                     diags.append(Row(len_, (start_i, start_j)))
+#             len_ = 0
+#                     start_i, start_j = i
+                    
+#             return diags
+
+
+    #         for j in range(d, len(grid)):
+    #             if grid[d+i, d+j] == color:
+    #                 len_ += 1
+    #                 max_len = len_ if len_ > max_len else max_len
+    #             else:
+    #                 len_ = 0
+    # return max_len    
 
 
 # def measure_row(grid: np.ndarray, color: int) -> int:
@@ -83,18 +104,18 @@ def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
 # def measure_col(grid: np.ndarray, color: int) -> int:
 #     return measure_row(grid.T, color)
 
-# def measure_diag(grid: np.ndarray, color: int) -> int:
-#     max_len = 0
-#     for d in range(len(grid)):
-#         len_ = 0
-#         for i in range(d, len(grid)):
-#             for j in range(d, len(grid)):
-#                 if grid[d+i, d+j] == color:
-#                     len_ += 1
-#                     max_len = len_ if len_ > max_len else max_len
-#                 else:
-#                     len_ = 0
-#     return max_len    
+def measure_diagonal(grid: np.ndarray, color: int) -> int:
+    max_len = 0
+    for d in range(len(grid)):
+        len_ = 0
+        for i in range(d, len(grid)):
+            for j in range(d, len(grid)):
+                if grid[d+i, d+j] == color:
+                    len_ += 1
+                    max_len = len_ if len_ > max_len else max_len
+                else:
+                    len_ = 0
+    return max_len    
 
 def stone_sum(grid: np.ndarray, color: int) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.

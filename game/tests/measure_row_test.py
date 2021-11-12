@@ -6,7 +6,6 @@ def test_row1():
         [1, 0, 0],
         [1, 1, 0]
         ])
-    print(measure_row(g, 1))
     assert measure_row(g, 1) == [Row(2, (2,0))]
 
 def test_row2():
@@ -15,11 +14,7 @@ def test_row2():
         [1, 0, 0],
         [1, 1, 1]
         ])
-    print(measure_row(g, 1))
     assert measure_row(g, 1) == [Row(3, (2,0))]
-
-test_row1()
-test_row2()
 
 def test_row3():
     g = np.array([
@@ -28,7 +23,6 @@ def test_row3():
         [0, 1, 1]
         ])
     assert measure_row(g, 1) == [Row(2, (2,1))]
-
 
 def test_row4():
     g = np.array([
@@ -53,3 +47,23 @@ def test_row6():
         [0, 0, 1]
         ])
     assert measure_row(g, 1) == []
+
+def test_row7():
+    g = np.array([
+        [0, 0, 1, 0, 1],
+        [0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1],
+        [1, 1, 0, 1, 1],
+        ])
+    assert measure_row(g, 1) == [Row(2, (4, 0)), Row(2, (4,3))]
+
+def test_row8():
+    g = np.array([
+        [0, 1, 0, 0, 0],
+        [1, 0, 1, 1, 1],
+        [1, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0],
+        [1, 0, 0, 0, 0],
+        ])
+    assert measure_row(g, 1) == [Row(3, (1, 2))] #, Row(2, (0, 4)), Row(2, (3,4))]
