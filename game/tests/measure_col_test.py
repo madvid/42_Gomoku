@@ -66,4 +66,25 @@ def test_col8():
         [0, 1, 0, 0, 0],
         [1, 1, 1, 0, 0],
         ])
-    assert measure_col(g, 1) == [Column(3, (2, 1))] #, Column(2, (0, 4)), Column(2, (3,4))]
+    assert measure_col(g, 1) == [Column(3, (2, 1))]
+
+
+def test_col9():
+    g = np.array([
+        [0, 0, 1, 0, 0],
+        [0, 1, 0, 0, 0],
+        [1, 1, 0, 0, 0],
+        [0, 1, 0, 0, 0],
+        [1, 0, 1, 0, 0],
+        ])
+    assert measure_col(g, 1) == [Column(3, (1, 1))]
+
+def test_col10():
+    g = np.array([
+        [0, 0, 1, 1, 1],
+        [0, 1, 1, 0, 1],
+        [1, 1, 1, 1, 0],
+        [0, 1, 0, 1, 1],
+        [1, 0, 1, 1, 1],
+        ])
+    assert measure_col(g, 1) == [Column(3, (1,1)), Column(3, (0,2)), Column(3, (2,3)) ,Column(2, (0,4)), Column(2, (3,4))]
