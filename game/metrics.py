@@ -8,6 +8,9 @@ WHITE = -1
 
 Position = Tuple[int, int] # The indexing of positions follows numpy's one (height,width)
 
+def swap_position(pos):
+    return (pos[1], pos[0])
+
 Row = NamedTuple('Row', [('lenght', int), ('position', Position)])
 Column = NamedTuple('Column', [('lenght', int), ('position', Position)])
 Diagonal = NamedTuple('Diagonal', [('lenght', int), ('position', Position)])
@@ -39,7 +42,12 @@ def measure_row(grid: ndarray, color: int) -> List[Row]:
     return rows
 
 def measure_col(grid: ndarray, color: int) -> int:
-    return measure_row(grid.T, color)
+    # Transpose the cols as rows to measure it
+    cols_as_rows = measure_row(grid.T, color)
+    # Swap position to get it right
+    cols = [Column(l, swap_position(pos)) for l, pos in cols_as_rows]
+    return cols
+    
 
 def measure_diag(grid: ndarray, color: int) -> int:
     max_len = 0
