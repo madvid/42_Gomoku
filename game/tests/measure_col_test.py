@@ -24,7 +24,6 @@ def test_col3():
         ])
     assert measure_col(g, 1) == [Column(2, (1,2))]
 
-
 def test_col4():
     g = np.array([
         [0, 1, 1],

@@ -8,8 +8,9 @@ WHITE = -1
 
 Position = Tuple[int, int] # The indexing of positions follows numpy's one (height,width)
 
-def swap_position(pos):
+def swap_position(pos): #FIXME: should be move to utils or added to a Position class
     return (pos[1], pos[0])
+
 
 Row = NamedTuple('Row', [('lenght', int), ('position', Position)])
 Column = NamedTuple('Column', [('lenght', int), ('position', Position)])
@@ -19,18 +20,22 @@ Diagonal = NamedTuple('Diagonal', [('lenght', int), ('position', Position)])
 # Column = Tuple[int, Position]
 # Diagonal = Tuple[int, Position]
 
-def measure_row(grid: ndarray, color: int) -> List[Row]:
+def measure_row(grid: np.ndarray, color: int) -> List[Row]:
     rows = []
-    height,width = grid.shape
+    _, width = grid.shape
     for i, r in enumerate(grid):
         len_ = 0
         start_i, start_j = i, 0
+        # For each row, count the number n of consecutive stones of the same color. If n > 2, the row is registered.
         for j, x in enumerate(r):
+            # Correct color found.
             if x == color:
                 len_ += 1
+                # Case: end of line
                 if len_ > 1 and j == width-1:
                     rows.append(Row(len_, (start_i, start_j)))
                     len_ = 0
+            # Incorrect color.
             else:
                 if len_ < 2:
                     start_j += 1
@@ -41,7 +46,7 @@ def measure_row(grid: ndarray, color: int) -> List[Row]:
                     start_i, start_j = i, j+1
     return rows
 
-def measure_col(grid: ndarray, color: int) -> int:
+def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     # Transpose the cols as rows to measure it
     cols_as_rows = measure_row(grid.T, color)
     # Swap position to get it right
@@ -49,8 +54,8 @@ def measure_col(grid: ndarray, color: int) -> int:
     return cols
     
 
-def measure_diag(grid: ndarray, color: int) -> int:
-    max_len = 0
+def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
+    diags = []
     for d in range(len(grid)):
         len_ = 0
         for i in range(d, len(grid)):
@@ -63,7 +68,7 @@ def measure_diag(grid: ndarray, color: int) -> int:
     return max_len    
 
 
-# def measure_row(grid: ndarray, color: int) -> int:
+# def measure_row(grid: np.ndarray, color: int) -> int:
 #     max_len = 0
 #     for r in grid:
 #         len_ = 0
@@ -75,10 +80,10 @@ def measure_diag(grid: ndarray, color: int) -> int:
 #                 len_ = 0
 #     return max_len    
 
-# def measure_col(grid: ndarray, color: int) -> int:
+# def measure_col(grid: np.ndarray, color: int) -> int:
 #     return measure_row(grid.T, color)
 
-# def measure_diag(grid: ndarray, color: int) -> int:
+# def measure_diag(grid: np.ndarray, color: int) -> int:
 #     max_len = 0
 #     for d in range(len(grid)):
 #         len_ = 0
@@ -91,11 +96,11 @@ def measure_diag(grid: ndarray, color: int) -> int:
 #                     len_ = 0
 #     return max_len    
 
-def stone_sum(grid: ndarray, color: int) -> int:
+def stone_sum(grid: np.ndarray, color: int) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
     return grid.sum() * color
 
-def longest_line(grid: ndarray, color: int) -> int:
+def longest_line(grid: np.ndarray, color: int) -> int:
     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
     black_max = max([measure_row(grid, BLACK), measure_col(grid, BLACK), measure_diag(grid, BLACK)])
     white_max = max([measure_row(grid, WHITE), measure_col(grid, WHITE), measure_diag(grid, WHITE)])

@@ -1,6 +1,5 @@
 from __future__ import annotations
 import numpy as np
-from numpy import ndarray
 from typing import Tuple, List
 
 from metrics import * 
@@ -9,11 +8,15 @@ class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric = None # A dict containing the scoring metrics for black and white
         
-    def __init__(self, parent: Node, grid: ndarray, color: int = BLACK) -> None:
+    def __init__(self, parent: Node, grid: np.ndarray, color: int = BLACK) -> None:
         self.parent = parent
         self.grid = grid
         self.color = color
     
+    def are_surounded(self) -> np.ndarray:
+        # Returns an array of bools. 
+        pass
+
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color
