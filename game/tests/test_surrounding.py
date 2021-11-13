@@ -6,9 +6,6 @@ def test_row1():
         [-1, 1, -1],
         [ 1, 1,  1]
         ])
-    # StoneSequence.grid = g
-    # StoneSequence.max_height = g.shape[0] - 1
-    # StoneSequence.max_width = g.shape[1] - 1
 
     row = Row(1, Position(1,1), 1, g)
     assert row.is_surrounded()
@@ -52,6 +49,29 @@ def test_row2():
         ])
     row = Row(2, Position(1,1), 1, g)
     assert row.is_surrounded()
+
+def test_col2():
+    g = np.array([
+        [0,  0, -1,  0, 1],
+        [-1, 1,  1, -1, 1],
+        [1,  0,  1,  0, 0],
+        [0,  0, -1,  0, 1],
+        [1,  1,  0,  1, 1],
+        ])
+    row = Column(2, Position(1,2), 1, g)
+    assert row.is_surrounded()
+
+def test_diag3():
+    g = np.array([
+        [0,  0,  1,  0, 1],
+        [-1, 1,  1, -1, 1],
+        [1,  0, -1,  0, 0],
+        [0,  1,  0,  0, 1],
+        [1,  1,  0,  1, 1],
+        ])
+    row = Diagonal(2, Position(1,3), -1, g, False)
+    assert row.is_surrounded()
+
 
 # # def test_row2():
 # #     g = np.array([

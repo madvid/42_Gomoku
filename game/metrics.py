@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Tuple#, NamedTuple
+from typing import List
 import numpy as np
 
 BLACK = 1
@@ -35,15 +35,7 @@ class Position():
 
 
 class StoneSequence():
-    # Global attributes of all sequences. Generated once before building the tree.
-    # grid: np.ndarray = None
-    # max_height: int = None
-    # max_width: int = None
-
     def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
-        # if (self.grid == None).all() or self.max_height == None or self.max_width == None:
-        #     raise ValueError
-        
         self.length = length
         self.start = position
         self.end = None
@@ -55,6 +47,7 @@ class StoneSequence():
 
     def __eq__(self, o: object) -> bool:
         return self.length == o.length and self.start == o.start
+
     # def to_row(self):
     #     return Row(self.length, self.start, self.color)
 
@@ -188,35 +181,12 @@ def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
     
     return l_diags + r_diags
 
-# def measure_row(grid: np.ndarray, color: int) -> List[Row]:
-#     rows = []
-#     # _, width = grid.shape
-#     for i, r in enumerate(grid):
-#         len_ = 0
-#         start_i, start_j = i, 0
-#         # For each row, count the number n of consecutive stones of the same color. If n > 2, the row is registered.
-#         for j, x in enumerate(r):
-#             # Correct color found.
-#             if x == color:
-#                 len_ += 1
-#                 # Case: end of line
-#                 if len_ > 1 and j == len(r)-1:
-#                     rows.append(Row(len_, Position(start_i, start_j), color))
-#                     len_ = 0
-#             # Incorrect color.
-#             else:
-#                 if len_ < 2:
-#                     start_j = j+1
-#                     len_ = 0
-#                 else:
-#                     rows.append(Row(len_, Position(start_i, start_j), color))
-#                     len_ = 0
-#                     start_i, start_j = i, j+1
-#     return rows
-
-
-    
-
+def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
+    sequences = []
+    sequences.append(measure_row(grid, color))
+    sequences.append(measure_col(grid, color))
+    sequences.append(measure_diag(grid, color))
+    return sequences
 
 
 def stone_sum(grid: np.ndarray, color: int) -> int:
