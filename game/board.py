@@ -23,8 +23,8 @@ class Node():
         return Node(self, tmp_grid, color)
 
     def generate_next_moves(self) -> List[Node]:
-        possibles_moves = np.nonzero(self.grid == 0)
-        return [self.update((x,y), self.color * -1) for x,y in zip(*possibles_moves)]
+        possibles_moves = np.argwhere(self.grid == 0)
+        return [self.update((x,y), self.color * -1) for x,y in possibles_moves]
 
     def score(self) -> int:
         return Node.metric[self.color](self.grid, self.color)
