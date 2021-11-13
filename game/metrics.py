@@ -1,18 +1,105 @@
 from __future__ import annotations
-from typing import List, Tuple, NamedTuple
+from typing import List, Tuple#, NamedTuple
 import numpy as np
 
 BLACK = 1
 WHITE = -1
 
-Position = Tuple[int, int] # The indexing of positions follows numpy's one (height,width)
+class Position():
+    def __init__(self, i, j) -> None:
+        self.i = i
+        self.j = j
+    
+    def __add__(self, p: Position) -> Position:
+        return Position(self.i + p.i, self.j + p.j)
 
-def swap_position(pos): #FIXME: should be move to utils or added to a Position class
-    return (pos[1], pos[0])
+    def swap(self):
+        return Position(self.j, self.i)
 
-Row = NamedTuple('Row', [('lenght', int), ('position', Position)])
-Column = NamedTuple('Column', [('lenght', int), ('position', Position)])
-Diagonal = NamedTuple('Diagonal', [('lenght', int), ('position', Position), ('left', bool)])
+# Position = Tuple[int, int] # The indexing of positions follows numpy's one (height,width)
+
+# def swap_position(pos): #FIXME: should be move to utils or added to a Position class
+#     return (pos[1], pos[0])
+
+
+class StoneSequence():
+    # Global attributes of all sequences. Generated once before building the tree.
+    grid: np.ndarray = None
+    max_height: int = None
+    max_width: int = None
+
+    def __init__(self, length: int, position: Position, color: int) -> None:
+        self.length = length
+        self.start = position
+        self.end = None
+        self.color = color
+
+    def is_surrounded(self):
+        raise NotImplementedError
+
+    def to_row(self):
+        return Row(self.length, self.start, self.color)
+
+    def to_col(self):
+        return Column(self.length, self.start, self.color)
+
+    def to_diag(self, left: bool):
+        return Diagonal(self.length, self.start, self.color, left)
+
+
+class Row(StoneSequence):
+    def __init__(self, length, position, color) -> None:
+        super.__init__(length, position, color)
+        self.end = self.start + Position(0, length)
+
+    def is_surrounded(self):
+        if (self.start[1] != 0
+            and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
+            and self.end[1] != self.max_width 
+            and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1)):
+            return True
+        return False
+        
+        
+class Column(StoneSequence):
+    def __init__(self, length, position, color) -> None:
+        super.__init__(length, position, color)
+        self.end = self.start + Position(length, 0)
+
+    def is_surrounded(self):
+        if (self.start[0] != 0
+            and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
+            and self.end[0] != self.max_height 
+            and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1)):
+            return True
+        return False
+
+
+class Diagonal(StoneSequence):
+    def __init__(self, length: int, position: Position, color: int, left: bool) -> None:
+        super().__init__(length, position, color)
+        self.left = left
+        self.end = self.start + Position(length, length) if left else self.start - Position(length, length)
+
+    def is_surrounded(self):
+        if self.left:
+            if (self.start[0] != 0 and self.start[1] != 0
+                and self.grid[self.start[0] - 1, self.start[1] -1] == (self.color * -1)
+                and self.end[0] != self.max_height and self.end[1] != self.max_width
+                and self.grid[self.end[0] + 1, self.end[1] + 1] == (self.color * -1)):
+                return True
+        else: 
+            if (self.start[0] != 0 and self.start[1] != self.max_height
+                and self.grid[self.start[0] - 1, self.start[1] + 1] == (self.color * -1)
+                and self.end[0] != self.max_height and self.end[1] != 0
+                and self.grid[self.end[0] + 1, self.end[1] - 1] == (self.color * -1)):
+                return True
+        return False
+
+
+# Row = NamedTuple('Row', [('lenght', int), ('position', Position)])
+# Column = NamedTuple('Column', [('lenght', int), ('position', Position)])
+# Diagonal = NamedTuple('Diagonal', [('lenght', int), ('position', Position), ('left', bool)])
 
 # Row = Tuple[int, Position]
 # Column = Tuple[int, Position]
@@ -31,7 +118,7 @@ def measure_row(grid: np.ndarray, color: int) -> List[Row]:
                 len_ += 1
                 # Case: end of line
                 if len_ > 1 and j == len(r)-1:
-                    rows.append(Row(len_, (start_i, start_j)))
+                    rows.append(Row(len_, Position(start_i, start_j), color))
                     len_ = 0
             # Incorrect color.
             else:
@@ -39,7 +126,7 @@ def measure_row(grid: np.ndarray, color: int) -> List[Row]:
                     start_j = j+1
                     len_ = 0
                 else:
-                    rows.append(Row(len_, (start_i, start_j)))
+                    rows.append(Row(len_, Position(start_i, start_j), color))
                     len_ = 0
                     start_i, start_j = i, j+1
     return rows
@@ -48,7 +135,7 @@ def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     # Transpose the cols as rows to measure it
     cols_as_rows = measure_row(grid.T, color)
     # Swap position to get it right
-    cols = [Column(l, swap_position(pos)) for l, pos in cols_as_rows]
+    cols = [Column(l, pos.swap()) for l, pos in cols_as_rows]
     return cols
     
 def convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
