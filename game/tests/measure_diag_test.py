@@ -7,7 +7,7 @@ def test_diag1():
         [0, 0, 1, 0],
         [1, 0, 0, 0]
         ])
-    assert measure_diag(g, 1) == [Diagonal(2, Position(1, 1), 1, True)]
+    assert measure_diag(g, 1) == [Diagonal(2, Position(1, 1), 1, g, True)]
 
 def test_diag2():
     g = np.array([
@@ -16,7 +16,7 @@ def test_diag2():
         [0, 1, 0, 0],
         [0, 0, 1, 0]
         ])
-    assert measure_diag(g, 1) == [Diagonal(3, Position(1, 0), 1, True)]
+    assert measure_diag(g, 1) == [Diagonal(3, Position(1, 0), 1, g, True)]
 
 def test_diag3():
     g = np.array([
@@ -25,7 +25,7 @@ def test_diag3():
         [1, 0, 0, 1],
         [0, 1, 0, 0]
         ])
-    assert measure_diag(g, 1) == [Diagonal(2, Position(2, 0), 1, True), Diagonal(3, Position(0,1), 1, True)]
+    assert measure_diag(g, 1) == [Diagonal(2, Position(2, 0), 1, g, True), Diagonal(3, Position(0,1), 1, g, True)]
 
 def test_diag4():
     g = np.array([
@@ -35,9 +35,9 @@ def test_diag4():
         [0, 1, 0, 0]
         ])
     assert measure_diag(g, 1) == [
-                                Diagonal(2, Position(2, 0), 1, True), 
-                                Diagonal(3, Position(0,1), 1, True),
-                                Diagonal(3, Position(0,3), 1, False)]
+                                Diagonal(2, Position(2, 0), 1, g, True), 
+                                Diagonal(3, Position(0,1), 1, g, True),
+                                Diagonal(3, Position(0,3), 1, g, False)]
 
 def test_diag5():
     g = np.array([
@@ -46,5 +46,5 @@ def test_diag5():
         [0, 1, 0, 1],
         [1, 0, 0, 0]
         ])
-    assert measure_diag(g, 1) == [Diagonal(2, Position(1, 0), 1, True), Diagonal(2, Position(1, 2), 1, True),
-                                  Diagonal(3, Position(1, 2), 1, False)]
+    assert measure_diag(g, 1) == [Diagonal(2, Position(1, 0), 1, g, True), Diagonal(2, Position(1, 2), 1, g, True),
+                                  Diagonal(3, Position(1, 2), 1, g, False)]

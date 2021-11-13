@@ -13,29 +13,42 @@ class Position():
     def __add__(self, p: Position) -> Position:
         return Position(self.i + p.i, self.j + p.j)
     
+    def __sub__(self, p: Position) -> Position:
+        return Position(self.i - p.i, self.j - p.j)
+
     def __eq__(self, o: object) -> bool:
         return self.i == o.i and self.j == o.j
+    
+    def __repr__(self) -> str:
+        return f"({self.i}, {self.j})"
+
+    def __getitem__(self, key: int) -> int:
+        if key == 0:
+            return self.i
+        elif key == 1:
+            return self.j
+        else:
+            raise KeyError
 
     def swap(self):
         return Position(self.j, self.i)
 
-# Position = Tuple[int, int] # The indexing of positions follows numpy's one (height,width)
-
-# def swap_position(pos): #FIXME: should be move to utils or added to a Position class
-#     return (pos[1], pos[0])
-
 
 class StoneSequence():
     # Global attributes of all sequences. Generated once before building the tree.
-    grid: np.ndarray = None
-    max_height: int = None
-    max_width: int = None
+    # grid: np.ndarray = None
+    # max_height: int = None
+    # max_width: int = None
 
-    def __init__(self, length: int, position: Position, color: int) -> None:
+    def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
+        # if (self.grid == None).all() or self.max_height == None or self.max_width == None:
+        #     raise ValueError
+        
         self.length = length
         self.start = position
         self.end = None
         self.color = color
+        self.grid = grid
 
     def is_surrounded(self):
         raise NotImplementedError
@@ -53,40 +66,43 @@ class StoneSequence():
 
 
 class Row(StoneSequence):
-    def __init__(self, length, position, color) -> None:
-        super().__init__(length, position, color)
-        self.end = self.start + Position(0, length)
+    def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
+        super().__init__(length, position, color, grid)
+        self.end = self.start + Position(0, length - 1)
+        self.max_height = self.grid.shape[0] - 1
+        self.max_width = self.grid.shape[1] - 1
 
     def is_surrounded(self):
-        if (self.start[1] != 0
+        return (self.start[1] > 0
             and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
-            and self.end[1] != self.max_width 
-            and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1)):
-            return True
-        return False
+            and self.end[1] < self.max_width 
+            and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1))
         
 
 class Column(StoneSequence):
-    def __init__(self, length, position, color) -> None:
-        super().__init__(length, position, color)
-        self.end = self.start + Position(length, 0)
+    def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
+        super().__init__(length, position, color, grid)
+        self.end = self.start + Position(length-1, 0)
+        self.max_height = self.grid.shape[0] - 1
+        self.max_widht = self.grid.shape[1] - 1
 
     def is_surrounded(self):
-        if (self.start[0] != 0
+        return (self.start[0] != 0
             and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
             and self.end[0] != self.max_height 
-            and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1)):
-            return True
-        return False
+            and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
 
 
 class Diagonal(StoneSequence):
-    def __init__(self, length: int, position: Position, color: int, left: bool) -> None:
-        super().__init__(length, position, color)
+    def __init__(self, length: int, position: Position, color: int, grid: np.ndarray, left: bool) -> None:
+        super().__init__(length, position, color, grid)
         self.left = left
-        self.end = self.start + Position(length, length) #if left else self.start - Position(length, length)
+        self.end = self.start + Position(length -1 , length -1) if left else self.start - Position(length - 1, length - 1)
+        self.max_height = self.grid.shape[0] - 1
+        self.max_width = self.grid.shape[1] - 1
 
     def is_surrounded(self):
+
         if self.left:
             if (self.start[0] != 0 and self.start[1] != 0
                 and self.grid[self.start[0] - 1, self.start[1] -1] == (self.color * -1)
@@ -102,14 +118,6 @@ class Diagonal(StoneSequence):
         return False
 
 
-# Row = NamedTuple('Row', [('lenght', int), ('position', Position)])
-# Column = NamedTuple('Column', [('lenght', int), ('position', Position)])
-# Diagonal = NamedTuple('Diagonal', [('lenght', int), ('position', Position), ('left', bool)])
-
-# Row = Tuple[int, Position]
-# Column = Tuple[int, Position]
-# Diagonal = Tuple[int, Position]
-
 def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
     seqs = []
     for i, r in enumerate(grid):
@@ -122,7 +130,7 @@ def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
                 len_ += 1
                 # Case: end of line
                 if len_ > 1 and j == len(r)-1:
-                    seqs.append(StoneSequence(len_, Position(start_i, start_j), color))
+                    seqs.append(StoneSequence(len_, Position(start_i, start_j), color, grid))
                     len_ = 0
             # Incorrect color.
             else:
@@ -130,20 +138,20 @@ def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
                     start_j = j+1
                     len_ = 0
                 else:
-                    seqs.append(StoneSequence(len_, Position(start_i, start_j), color))
+                    seqs.append(StoneSequence(len_, Position(start_i, start_j), color, grid))
                     len_ = 0
                     start_i, start_j = i, j+1
     return seqs
 
 def measure_row(grid: np.ndarray, color: int) -> List[Row]:
     sequences = measure_sequence(grid, color)
-    return [Row(seq.length, seq.start, seq.color) for seq in sequences]
+    return [Row(seq.length, seq.start, seq.color, grid) for seq in sequences]
 
 def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     # Transpose the cols as rows to measure it
     cols_sequences = measure_sequence(grid.T, color)
     # Swap position to get it right
-    cols = [Column(seq.length, seq.start.swap(), seq.color) for seq in cols_sequences]
+    cols = [Column(seq.length, seq.start.swap(), seq.color, grid) for seq in cols_sequences]
     return cols
 
 def convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
@@ -175,8 +183,8 @@ def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
     l_diags_as_row = measure_sequence(l_diags_lst, color)
     r_diags_as_row = measure_sequence(r_diags_lst, color)
 
-    l_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=True),  seq.color,  left=True) for seq in l_diags_as_row]
-    r_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=False), seq.color, left=False) for seq in r_diags_as_row]
+    l_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=True),  seq.color, grid, left=True) for seq in l_diags_as_row]
+    r_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=False), seq.color, grid, left=False) for seq in r_diags_as_row]
     
     return l_diags + r_diags
 
