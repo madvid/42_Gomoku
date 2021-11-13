@@ -6,7 +6,7 @@ from metrics import *
 
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
-    metric = None # A dict containing the scoring metrics for black and white
+    metric: dict = {} # A dict containing the scoring metrics for black and white
         
     def __init__(self, parent: Node, grid: np.ndarray, color: int = BLACK) -> None:
         self.parent = parent
