@@ -42,6 +42,9 @@ class StoneSequence():
         self.color = color
         self.grid = grid
 
+    def have_two_freedom(self):
+        pass
+
     def is_surrounded(self):
         raise NotImplementedError
 
@@ -65,11 +68,13 @@ class Row(StoneSequence):
         self.max_height = self.grid.shape[0] - 1
         self.max_width = self.grid.shape[1] - 1
 
+    def have_two_freedom(self):
+        return self.start[1] > 0 and self.end[1] < self.max_width
+
     def is_surrounded(self):
-        return (self.start[1] > 0
-            and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
-            and self.end[1] < self.max_width 
-            and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1))
+        return (self.have_two_freedom()
+                and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
+                and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1))
         
 
 class Column(StoneSequence):
@@ -79,10 +84,12 @@ class Column(StoneSequence):
         self.max_height = self.grid.shape[0] - 1
         self.max_widht = self.grid.shape[1] - 1
 
+    def have_two_freedom(self):
+        return self.start[0] != 0 and self.end[0] != self.max_height 
+
     def is_surrounded(self):
-        return (self.start[0] != 0
+        return (self.have_two_freedom()
             and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
-            and self.end[0] != self.max_height 
             and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
 
 
@@ -94,21 +101,23 @@ class Diagonal(StoneSequence):
         self.max_height = self.grid.shape[0] - 1
         self.max_width = self.grid.shape[1] - 1
 
-    def is_surrounded(self):
-
+    def have_two_freedom(self):
         if self.left:
-            if (self.start[0] != 0 and self.start[1] != 0
-                and self.grid[self.start[0] - 1, self.start[1] -1] == (self.color * -1)
-                and self.end[0] != self.max_height and self.end[1] != self.max_width
-                and self.grid[self.end[0] + 1, self.end[1] + 1] == (self.color * -1)):
-                return True
+            return (self.start[0] != 0 and self.start[1] != 0 
+                    and self.end[0] != self.max_height and self.end[1] != self.max_width)
+        else:
+            return (self.start[0] != 0 and self.start[1] != self.max_height
+                    and self.end[0] != self.max_height and self.end[1] != 0)
+
+    def is_surrounded(self):
+        if self.left:
+            return (self.have_two_freedom() 
+                    and self.grid[self.start[0] - 1, self.start[1] -1] == (self.color * -1)
+                    and self.grid[self.end[0] + 1, self.end[1] + 1] == (self.color * -1))
         else: 
-            if (self.start[0] != 0 and self.start[1] != self.max_height
-                and self.grid[self.start[0] - 1, self.start[1] + 1] == (self.color * -1)
-                and self.end[0] != self.max_height and self.end[1] != 0
-                and self.grid[self.end[0] + 1, self.end[1] - 1] == (self.color * -1)):
-                return True
-        return False
+            return (self.have_two_freedom()
+                    and self.grid[self.start[0] - 1, self.start[1] + 1] == (self.color * -1)
+                    and self.grid[self.end[0] + 1, self.end[1] - 1] == (self.color * -1))
 
 
 def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
