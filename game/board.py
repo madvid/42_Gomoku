@@ -47,7 +47,7 @@ class Node():
         }
 
         for seq in sequences:
-            grid = rm_funcs[seq](grid)
+            grid = rm_funcs[type(seq)](grid)
         
         return grid
 
@@ -65,8 +65,13 @@ class Node():
             stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
 
             # Captured stones
-            captured_stones = filter(lambda x : x.length == 2 and x.is_surrounded(), stone_seq)
+            captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), stone_seq)
             m.grid = self.remove_sequences(m.grid, captured_stones)
+
+            # Double free-three
+            cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
+            grouped_free_three = filter(lambda x: x.length == 3 and x.have_two_freedom(), cleared_stone_seq)
+
         
             # TODO: Check double free-three
             # Get all availables moves
