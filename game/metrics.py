@@ -73,12 +73,6 @@ class Row(StoneSequence):
         self.max_width = self.grid.shape[1] - 1
         self.distance_to_edge = (self.start[1], self.max_width - self.end[1])
 
-    # def distance_to_edge(self) -> Tuple[int, int]:
-    #     return self.start[1], self.max_width - self.end[1]
-
-    # def have_two_freedom(self, distance: int = 0) -> bool:
-    #     return (self.start[1] - distance) > 0 and (self.end[1] + distance) < self.max_width
-
     def is_surrounded(self) -> bool:  
         return (min(self.distance_to_edge) > 0
                 and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
@@ -99,13 +93,6 @@ class Row(StoneSequence):
                     return True
         return False
 
-
-        # return (self.length == 3 
-        #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
-        #         and self.grid[self.start[0], self.start[1] - 1] == 0
-        #         and self.grid[self.end[0], self.end[1] + 1] == 0
-        #         and ( or ))
-
     # def is_a_bridge(self) -> bool:
     #     # FIXME
     #     freedom = self.have_two_freedom(1)
@@ -113,6 +100,7 @@ class Row(StoneSequence):
     #     occupied 
     #     return (self.have_two_freedom()
     #             )
+
 
 class Column(StoneSequence):
     def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
@@ -122,16 +110,7 @@ class Column(StoneSequence):
         self.max_widht = self.grid.shape[1] - 1
         self.distance_to_edge = self.start[0], self.max_height - self.end[0]
 
-    # def distance_to_edge(self) -> int:
-    #     return min(self.start[0], self.max_height - self.end[0])
-
-    # def have_two_freedom(self, distance: int = 0):
-    #     return (self.start[0] - distance) != 0 and (self.end[0] + distance) != self.max_height 
-
     def is_surrounded(self):
-        # return (self.have_two_freedom()
-        #     and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
-        #     and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
         return (min(self.distance_to_edge) > 0
             and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
             and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
@@ -151,10 +130,12 @@ class Column(StoneSequence):
                     return True
         return False
 
+
 class Diagonal(StoneSequence):
     def __init__(self, length: int, position: Position, color: int, grid: np.ndarray, left: bool) -> None:
         super().__init__(length, position, color, grid)
         self.left = left
+        self.slope = 1 if left else -1
         self.end = self.start + Position(length -1 , length -1) if left else self.start - Position(length - 1, length - 1)
         self.max_height = self.grid.shape[0] - 1
         self.max_width = self.grid.shape[1] - 1
@@ -162,37 +143,34 @@ class Diagonal(StoneSequence):
 
     def get_distance_to_edge(self) -> Tuple[int,int]:
         if self.left:
-            return self.start[0], self.start[1], self.max_height - self.end[0], self.max_width - self.end[1]
+            return min(self.start[0], self.start[1]), min(self.max_height - self.end[0], self.max_width - self.end[1])
         else:
-            return self.start[0], self.max_width - self.start[1], self.max_height - self.end[0], self.end[1]
+            return min(self.start[0], self.max_width - self.start[1]), min(self.max_height - self.end[0], self.end[1])
 
-
-    # def have_two_freedom(self, distance: int = 0):
-    #     if self.left:
-    #         return ((self.start[0] - distance) > 0 and (self.start[1] - distance) > 0 
-    #                 and (self.end[0] + distance) < self.max_height and (self.end[1] + distance) < self.max_width)
-    #     else:
-    #         return ((self.start[0] - distance) > 0 and (self.start[1] + distance) < self.max_height
-    #                 and (self.end[0] - distance) < self.max_height and (self.end[1] - distance > 0))
-
-    def is_surrounded(self):
-        if self.left:
-            return (min(self.distance_to_edge) > 0 
-                    and self.grid[self.start[0] - 1, self.start[1] -1] == (self.color * -1)
-                    and self.grid[self.end[0] + 1, self.end[1] + 1] == (self.color * -1))
-        else: 
-            return (min(self.distance_to_edge) > 0
-                    and self.grid[self.start[0] - 1, self.start[1] + 1] == (self.color * -1)
-                    and self.grid[self.end[0] + 1, self.end[1] - 1] == (self.color * -1))
-
+    def is_surrounded(self) -> bool:
         # if self.left:
-        #     return (self.have_two_freedom() 
-        #             and self.grid[self.start[0] - 1, self.start[1] -1] == (self.color * -1)
-        #             and self.grid[self.end[0] + 1, self.end[1] + 1] == (self.color * -1))
+        return (min(self.distance_to_edge) > 0 
+                    and self.grid[self.start[0] - 1, self.start[1] - self.slope] == (self.color * -1)
+                    and self.grid[self.end[0] + 1, self.end[1] + self.slope] == (self.color * -1))
         # else: 
-        #     return (self.have_two_freedom()
+        #     return (min(self.distance_to_edge) > 0
         #             and self.grid[self.start[0] - 1, self.start[1] + 1] == (self.color * -1)
         #             and self.grid[self.end[0] + 1, self.end[1] - 1] == (self.color * -1))
+
+    def is_a_grouped_free_three(self) -> bool:
+        # Check the length and if the immediate borders are free.
+        if (self.length == 3 
+            and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
+            and self.grid[self.start[0] - 1, self.start[1] - self.slope] == 0
+            and self.grid[self.end[0] + 1, self.end[1] + self.slope] == 0):
+            # Check if there is a second available space after one of the immediate borders.
+            if self.distance_to_edge[0] > 1:
+                if self.grid[self.start[0] - (self.slope * 2), self.start[1] - (self.slope * 2)] == 0:
+                    return True
+            else:
+                if self.grid[self.end[0] + (self.slope * 2), self.end[1] + (self.slope * 2)] == 0:
+                    return True
+        return False
 
 
 def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
