@@ -49,10 +49,6 @@ class StoneSequence():
     def _next_idx(self, distance: int) -> Tuple[int, int]:
         raise NotImplementedError
 
-    # def is_surrounded(self) -> bool:
-    #     # Check if both ends of the sequence are closed by an opponent's stone.
-    #     raise NotImplementedError
-
     def is_surrounded(self) -> bool:  
         # Check if both ends of the sequence are closed by an opponent's stone.
         return (min(self.distance_to_edge) > 0
@@ -62,11 +58,8 @@ class StoneSequence():
     def is_captured(self) -> bool:
         return self.length == 2 and self.is_surrounded()
     
-    # def is_a_grouped_free_three(self) -> bool:
-    #     # Check if the sequence is grouped free-three: e.g. [ . X X X . . ]
-    #     raise NotImplementedError
-
     def is_a_grouped_free_three(self) -> bool:
+        # Check if the sequence is grouped free-three: e.g. [ . X X X . . ]
         # Check the length and if the immediate borders are free.
         if (self.length == 3 
             and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
@@ -81,11 +74,8 @@ class StoneSequence():
                     return True
         return False
 
-    # def is_a_bridge(self) -> bool:
-    #     # Check if the sequence is a 'bridge': e.g. [ . X . X X . ]
-    #     raise NotImplementedError
-
     def is_a_bridge(self) -> bool:
+        # Check if the sequence is a 'bridge': e.g. [ . X . X X . ]
         # Check the length and if the immediate borders are free.
         if (self.length == 2 
             and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 2
@@ -107,7 +97,7 @@ class StoneSequence():
         return self.is_a_grouped_free_three() or self.is_a_bridge()
 
     def __eq__(self, o: object) -> bool:
-        return self.length == o.length and self.start == o.start
+        return self.length == o.length and self.start == o.start and type(self) == type(o)
 
 
 class Row(StoneSequence):
@@ -124,46 +114,7 @@ class Row(StoneSequence):
     def _next_idx(self, distance: int) -> Tuple[int, int]:
         return self.end[0], self.end[1] + distance
 
-    # def is_surrounded(self) -> bool:  
-    #     return (min(self.distance_to_edge) > 0
-    #             and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
-    #             and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1))
-
-
-
-    # def is_a_grouped_free_three(self) -> bool:
-    #     # Check the length and if the immediate borders are free.
-    #     if (self.length == 3 
-    #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
-    #         and self.grid[self.start[0], self.start[1] - 1] == 0
-    #         and self.grid[self.end[0], self.end[1] + 1] == 0):
-    #         # Check if there is a second available space after one of the immediate borders.
-    #         if self.distance_to_edge[0] > 1:
-    #             if self.grid[self.start[0], self.start[1] - 2] == 0:
-    #                 return True
-    #         else:
-    #             if self.grid[self.end[0], self.end[1] + 2] == 0:
-    #                 return True
-    #     return False
-
-    # def is_a_bridge(self) -> bool:
-    #     # Check the length and if the immediate borders are free.
-    #     if (self.length == 2 
-    #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 2
-    #         and self.grid[self.start[0], self.start[1] - 1] == 0
-    #         and self.grid[self.end[0], self.end[1] + 1] == 0):
-    #         # Check if there is an friendly stone beyond of the immediate borders.
-    #         if self.distance_to_edge[0] > 1:
-    #             if (self.grid[self.start[0], self.start[1] - 2] == self.color
-    #                 and self.grid[self.start[0], self.start[1] - 3] == 0):
-    #                 return True
-    #         else:
-    #             if (self.grid[self.end[0], self.end[1] + 2] == self.color
-    #                 and self.grid[self.end[0], self.end[1] + 3] == 0):
-    #                 return True
-    #     return False
-
-
+ 
 class Column(StoneSequence):
     def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
         super().__init__(length, position, color, grid)
@@ -177,43 +128,6 @@ class Column(StoneSequence):
     
     def _next_idx(self, distance: int) -> Tuple[int, int]:
         return self.end[0] + distance, self.end[1]
-
-    # def is_surrounded(self) -> bool:
-    #     return (min(self.distance_to_edge) > 0
-    #         and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
-    #         and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
-
-    # def is_a_grouped_free_three(self) -> bool:
-    #     # Check the length and if the immediate borders are free.
-    #     if (self.length == 3 
-    #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
-    #         and self.grid[self.start[0] - 1, self.start[1]] == 0
-    #         and self.grid[self.end[0] + 1, self.end[1]] == 0):
-    #         # Check if there is a second available space after one of the immediate borders.
-    #         if self.distance_to_edge[0] > 1:
-    #             if self.grid[self.start[0] - 2, self.start[1]] == 0:
-    #                 return True
-    #         else:
-    #             if self.grid[self.end[0] + 2, self.end[1]] == 0:
-    #                 return True
-    #     return False
-
-    # def is_a_bridge(self) -> bool:
-    #     # Check the length and if the immediate borders are free.
-    #     if (self.length == 2 
-    #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 2
-    #         and self.grid[self.start[0] - 1, self.start[1]] == 0
-    #         and self.grid[self.end[0] + 1, self.end[1]] == 0):
-    #         # Check if there is a second available space after one of the immediate borders.
-    #         if self.distance_to_edge[0] > 1:
-    #             if (self.grid[self.start[0] - 2, self.start[1]] == self.color
-    #                 and self.grid[self.start[0] - 3, self.start[1]] == 0):
-    #                 return True
-    #         else:
-    #             if (self.grid[self.end[0] + 2, self.end[1]] == self.color
-    #                 and self.grid[self.end[0] + 3, self.end[1]] == 0):
-    #                 return True
-    #     return False
 
 
 class Diagonal(StoneSequence):
@@ -240,44 +154,6 @@ class Diagonal(StoneSequence):
     
     def _next_idx(self, distance: int) -> Tuple[int, int]:
         return self.end[0] + distance, self.end[1] + (self.slope * distance)
-
-    # def is_surrounded(self) -> bool:
-    #     # if self.left:
-    #     return (min(self.distance_to_edge) > 0 
-    #                 and self.grid[self.start[0] - 1, self.start[1] - self.slope] == (self.color * -1)
-    #                 and self.grid[self.end[0] + 1, self.end[1] + self.slope] == (self.color * -1))
-
-    # def is_a_grouped_free_three(self) -> bool:
-    #     # Check the length and if the immediate borders are free.
-    #     if (self.length == 3 
-    #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
-    #         and self.grid[self.start[0] - 1, self.start[1] - self.slope] == 0
-    #         and self.grid[self.end[0] + 1, self.end[1] + self.slope] == 0):
-    #         # Check if there is a second available space after one of the immediate borders.
-    #         if self.distance_to_edge[0] > 1:
-    #             if self.grid[self.start[0] - 2, self.start[1] - (self.slope * 2)] == 0:
-    #                 return True
-    #         else:
-    #             if self.grid[self.end[0] + 2, self.end[1] + (self.slope * 2)] == 0:
-    #                 return True
-    #     return False
-
-    # def is_a_bridge(self) -> bool:
-    #     # Check the length and if the immediate borders are free.
-    #     if (self.length == 2 
-    #         and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
-    #         and self.grid[self.start[0] - 1, self.start[1] - self.slope] == 0
-    #         and self.grid[self.end[0] + 1, self.end[1] + self.slope] == 0):
-    #         # Check if there is a second available space after one of the immediate borders.
-    #         if self.distance_to_edge[0] > 1:
-    #             if (self.grid[self.start[0] - 2, self.start[1] - (self.slope * 2)] == self.color
-    #                 and self.grid[self.start[0] - 3, self.start[1] - (self.slope * 3)] == 0):
-    #                 return True
-    #         else:
-    #             if (self.grid[self.end[0] + 2, self.end[1] + (self.slope * 2)] == self.color
-    #                 and self.grid[self.end[0] + 3, self.end[1] + (self.slope * 3)] == 0):
-    #                 return True
-    #     return False
 
 
 def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
