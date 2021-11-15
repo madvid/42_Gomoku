@@ -107,12 +107,6 @@ class Row(StoneSequence):
                 if self.grid[self.end[0], self.end[1] + 2] == self.color:
                     return True
         return False
-        # # FIXME
-        # freedom = self.have_two_freedom(1)
-        # free_surroundings = self.grid[self.start[0], self.start[1] - 1] == 0 and self.grid[self.end[0], self.end[1] + 1] == 0
-        # occupied 
-        # return (self.have_two_freedom()
-        #         )
 
 
 class Column(StoneSequence):
@@ -140,6 +134,21 @@ class Column(StoneSequence):
                     return True
             else:
                 if self.grid[self.end[0] + 2, self.end[1]] == 0:
+                    return True
+        return False
+
+    def is_a_bridge(self) -> bool:
+        # Check the length and if the immediate borders are free.
+        if (self.length == 2 
+            and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 2
+            and self.grid[self.start[0] - 1, self.start[1]] == 0
+            and self.grid[self.end[0] + 1, self.end[1]] == 0):
+            # Check if there is a second available space after one of the immediate borders.
+            if self.distance_to_edge[0] > 1:
+                if self.grid[self.start[0] - 2, self.start[1]] == self.color:
+                    return True
+            else:
+                if self.grid[self.end[0] + 2, self.end[1]] == self.color:
                     return True
         return False
 
