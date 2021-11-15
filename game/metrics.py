@@ -41,10 +41,23 @@ class StoneSequence():
         self.end = None
         self.color = color
         self.grid = grid
+        self.distance_to_edge = None
 
-    def is_surrounded(self) -> bool:
-        # Check if both ends of the sequence are closed by an opponent's stone.
+    def _previous_idx(self, distance: int) -> Tuple[int, int]:
         raise NotImplementedError
+    
+    def _next_idx(self, distance: int) -> Tuple[int, int]:
+        raise NotImplementedError
+
+    # def is_surrounded(self) -> bool:
+    #     # Check if both ends of the sequence are closed by an opponent's stone.
+    #     raise NotImplementedError
+
+    def is_surrounded(self) -> bool:  
+        # Check if both ends of the sequence are closed by an opponent's stone.
+        return (min(self.distance_to_edge) > 0
+                and self.grid[self._previous_idx(1)] == (self.color * -1)
+                and self.grid[self._next_idx(1)] == (self.color * -1))
 
     def is_captured(self) -> bool:
         return self.length == 2 and self.is_surrounded()
@@ -73,10 +86,18 @@ class Row(StoneSequence):
         self.max_width = self.grid.shape[1] - 1
         self.distance_to_edge = (self.start[1], self.max_width - self.end[1])
 
-    def is_surrounded(self) -> bool:  
-        return (min(self.distance_to_edge) > 0
-                and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
-                and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1))
+    def _previous_idx(self, distance: int) -> Tuple[int, int]:
+        return self.start[0], self.start[1] - distance
+    
+    def _next_idx(self, distance: int) -> Tuple[int, int]:
+        return self.end[0], self.end[1] + distance
+
+    # def is_surrounded(self) -> bool:  
+    #     return (min(self.distance_to_edge) > 0
+    #             and self.grid[self.start[0], self.start[1] - 1] == (self.color * -1)
+    #             and self.grid[self.end[0], self.end[1] + 1] == (self.color * -1))
+
+
 
     def is_a_grouped_free_three(self) -> bool:
         # Check the length and if the immediate borders are free.
@@ -119,10 +140,16 @@ class Column(StoneSequence):
         self.max_widht = self.grid.shape[1] - 1
         self.distance_to_edge = self.start[0], self.max_height - self.end[0]
 
-    def is_surrounded(self) -> bool:
-        return (min(self.distance_to_edge) > 0
-            and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
-            and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
+    def _previous_idx(self, distance: int) -> Tuple[int, int]:
+        return self.start[0] - distance, self.start[1]
+    
+    def _next_idx(self, distance: int) -> Tuple[int, int]:
+        return self.end[0] + distance, self.end[1]
+
+    # def is_surrounded(self) -> bool:
+    #     return (min(self.distance_to_edge) > 0
+    #         and self.grid[self.start[0] - 1, self.start[1]] == (self.color * -1)
+    #         and self.grid[self.end[0] + 1, self.end[1]] == (self.color * -1))
 
     def is_a_grouped_free_three(self) -> bool:
         # Check the length and if the immediate borders are free.
@@ -176,11 +203,17 @@ class Diagonal(StoneSequence):
         else:
             return min(self.start[0], self.max_width - self.start[1]), min(self.max_height - self.end[0], self.end[1])
 
-    def is_surrounded(self) -> bool:
-        # if self.left:
-        return (min(self.distance_to_edge) > 0 
-                    and self.grid[self.start[0] - 1, self.start[1] - self.slope] == (self.color * -1)
-                    and self.grid[self.end[0] + 1, self.end[1] + self.slope] == (self.color * -1))
+    def _previous_idx(self, distance: int) -> Tuple[int, int]:
+        return self.start[0] - distance, self.start[1] - (self.slope * distance)
+    
+    def _next_idx(self, distance: int) -> Tuple[int, int]:
+        return self.end[0] + distance, self.end[1] + (self.slope * distance)
+
+    # def is_surrounded(self) -> bool:
+    #     # if self.left:
+    #     return (min(self.distance_to_edge) > 0 
+    #                 and self.grid[self.start[0] - 1, self.start[1] - self.slope] == (self.color * -1)
+    #                 and self.grid[self.end[0] + 1, self.end[1] + self.slope] == (self.color * -1))
 
     def is_a_grouped_free_three(self) -> bool:
         # Check the length and if the immediate borders are free.

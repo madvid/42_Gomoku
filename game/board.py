@@ -8,14 +8,15 @@ class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric: dict = {} # A dict containing the scoring metrics for black and white
         
-    def __init__(self, parent: Node, grid: np.ndarray, color: int = BLACK) -> None:
+    def __init__(self, parent: Node, grid: np.ndarray, color: int) -> None:
         self.parent = parent
         self.grid = grid
         self.color = color
+        self.nb_free_three = None # Attribute updated after the creation of the instance.
     
-    def are_surounded(self) -> np.ndarray:
-        # Returns an array of bools. 
-        pass
+    # def are_surounded(self) -> np.ndarray:
+    #     # Returns an array of bools. 
+    #     pass
 
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
@@ -64,8 +65,10 @@ class Node():
 
             # Double free-three
             cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
-            nb_free_three = len(list(filter(lambda x: x.is_a_free_three(), cleared_stone_seq)))
-            if nb_free_three > 1:
+            m.nb_free_three = len(list(filter(lambda x: x.is_a_free_three(), cleared_stone_seq)))
+            # FIXME: double-three share a common stone!
+
+            if m.nb_free_three == self.parent.nb_free_three + 2:
                 possibles_moves.remove(m)
 
             # FIXME: double three are allowed if resulting from a capture!
