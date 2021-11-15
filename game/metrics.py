@@ -101,10 +101,12 @@ class Row(StoneSequence):
             and self.grid[self.end[0], self.end[1] + 1] == 0):
             # Check if there is an friendly stone beyond of the immediate borders.
             if self.distance_to_edge[0] > 1:
-                if self.grid[self.start[0], self.start[1] - 2] == self.color:
+                if (self.grid[self.start[0], self.start[1] - 2] == self.color
+                    and self.grid[self.start[0], self.start[1] - 3] == 0):
                     return True
             else:
-                if self.grid[self.end[0], self.end[1] + 2] == self.color:
+                if (self.grid[self.end[0], self.end[1] + 2] == self.color
+                    and self.grid[self.end[0], self.end[1] + 3] == 0):
                     return True
         return False
 
@@ -145,10 +147,12 @@ class Column(StoneSequence):
             and self.grid[self.end[0] + 1, self.end[1]] == 0):
             # Check if there is a second available space after one of the immediate borders.
             if self.distance_to_edge[0] > 1:
-                if self.grid[self.start[0] - 2, self.start[1]] == self.color:
+                if (self.grid[self.start[0] - 2, self.start[1]] == self.color
+                    and self.grid[self.start[0] - 3, self.start[1]] == 0):
                     return True
             else:
-                if self.grid[self.end[0] + 2, self.end[1]] == self.color:
+                if (self.grid[self.end[0] + 2, self.end[1]] == self.color
+                    and self.grid[self.end[0] + 3, self.end[1]] == 0):
                     return True
         return False
 
@@ -190,6 +194,22 @@ class Diagonal(StoneSequence):
                     return True
         return False
 
+    def is_a_bridge(self) -> bool:
+        # Check the length and if the immediate borders are free.
+        if (self.length == 2 
+            and min(self.distance_to_edge) > 0 and max(self.distance_to_edge) > 1
+            and self.grid[self.start[0] - 1, self.start[1] - self.slope] == 0
+            and self.grid[self.end[0] + 1, self.end[1] + self.slope] == 0):
+            # Check if there is a second available space after one of the immediate borders.
+            if self.distance_to_edge[0] > 1:
+                if (self.grid[self.start[0] - 2, self.start[1] - (self.slope * 2)] == self.color
+                    and self.grid[self.start[0] - 3, self.start[1] - (self.slope * 3)] == 0):
+                    return True
+            else:
+                if (self.grid[self.end[0] + 2, self.end[1] + (self.slope * 2)] == self.color
+                    and self.grid[self.end[0] + 3, self.end[1] + (self.slope * 3)] == 0):
+                    return True
+        return False
 
 
 def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
