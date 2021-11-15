@@ -167,6 +167,9 @@ class Diagonal(StoneSequence):
         self.max_width = self.grid.shape[1] - 1
         self.distance_to_edge = self.get_distance_to_edge()
 
+    def __repr__(self) -> str:
+        return f"Diagonal: {self.start}, {self.end}, {self.left}, {self.length}"
+
     def get_distance_to_edge(self) -> Tuple[int,int]:
         if self.left:
             return min(self.start[0], self.start[1]), min(self.max_height - self.end[0], self.max_width - self.end[1])
@@ -284,9 +287,9 @@ def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
 
 def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences = []
-    sequences.append(measure_row(grid, color))
-    sequences.append(measure_col(grid, color))
-    sequences.append(measure_diag(grid, color))
+    sequences.extend(measure_row(grid, color))
+    sequences.extend(measure_col(grid, color))
+    sequences.extend(measure_diag(grid, color))
     return sequences
 
 

@@ -61,7 +61,7 @@ def test_col2():
     row = Column(2, Position(1,2), 1, g)
     assert row.is_surrounded()
 
-def test_diag3():
+def test_rdiag3():
     g = np.array([
         [0,  0,  1,  0, 1],
         [-1, 1,  1, -1, 1],
@@ -72,6 +72,16 @@ def test_diag3():
     row = Diagonal(2, Position(1,3), -1, g, False)
     assert row.is_surrounded()
 
+def test_rdiag4():
+    g = np.array([
+        [1,  1,  1,  1],
+        [1,  1,  1,  1],
+        [1,  1, -1,  1],
+        [1, -1,  1,  1],
+        [1,  1,  1,  1]
+        ])
+    row = Diagonal(2, Position(2,2), -1, g, False)
+    assert row.is_surrounded()
 
 # # def test_row2():
 # #     g = np.array([

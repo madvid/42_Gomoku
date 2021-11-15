@@ -39,15 +39,15 @@ class Node():
                     grid[diag.start[0] + i, diag.start[1] + i] = 0
                 else:
                     grid[diag.start[0] + i, diag.start[1] - i] = 0
+            return grid
         
         rm_funcs = {
             Row: remove_row,
             Column: remove_col,
             Diagonal: remove_diag
         }
-
         for seq in sequences:
-            grid = rm_funcs[type(seq)](grid)
+            grid = rm_funcs[type(seq)](grid, seq)
         
         return grid
 
@@ -55,42 +55,21 @@ class Node():
     def generate_next_moves(self) -> List[Node]:
         possibles_moves_idx = np.argwhere(self.grid == 0)
         possibles_moves = [self.update((x,y), self.color * -1) for x,y in possibles_moves_idx]
-
-        # TODO: Remove any node where the new stone is captured
-        # For each node:
-        # 1. Collect all stones sequences for black and white
-        # 2. Remove any surrounded  black or white sequences from the board
-        # 3. Check for double free-three
         for m in possibles_moves:
             stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
-
             # Captured stones
             captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), stone_seq)
+            # print(f"captured = {captured_stones[0].grid}")
             m.grid = self.remove_sequences(m.grid, captured_stones)
 
             # Double free-three
             cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
-            grouped_free_three = filter(lambda x: x.length == 3 and x.have_two_freedom(), cleared_stone_seq)
+            nb_free_three = len(list(filter(lambda x: x.is_a_free_three(), cleared_stone_seq)))
+            if nb_free_three > 1:
+                possibles_moves.remove(m)
 
-        
-            # TODO: Check double free-three
-            # Get all availables moves
-            # For each:
-            # 1. collect possible moves from there (with same color played)
-            # 2. For each:
-            #   Collect availables moves.
-            #   If at least one move contains two StoneSequences of length == 4, discard the move.  
-            available_moves =  filter(lambda x : ~ (x.length == 2 and x.is_surrounded()), stone_seq)
-            for a in available_moves:
-                next_moves_idx = np.argwhere(a.grid == 0)
-                next_moves = [self.update((x,y), self.color) for x,y in next_moves_idx]
-                for i, n in enumerate(next_moves):
-                    n_seq: List[StoneSequence] = collect_sequences(n.grid, BLACK) + collect_sequences(n.grid, WHITE)
-                    if len(filter(lambda x : x.length == 4, n_seq)) >= 2:
-                        available_moves.remove(a)
-            # TODO: Verify that !!
-        
-            for 
+            # FIXME: double three are allowed if resulting from a capture!
+
         return possibles_moves
 
     def score(self) -> int:
