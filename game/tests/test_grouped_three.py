@@ -208,40 +208,40 @@ def test_rdiag2():
     diag = Diagonal(3, Position(1,4), 1, g, False)
     assert diag.is_a_grouped_free_three()
 
-# def test_diag3():
-#     g = np.array([
-#         [0,  0,  0,  0,  0, 0],
-#         [0,  1,  1,  1,  0, 0],
-#         [1,  0,  1,  0,  0, 0],
-#         [0,  0,  1,  1,  1, 0],
-#         [1,  1,  0,  1,  0, 0],
-#         [1,  1,  0,  1,  1, -1]
-#         ])
-#     diag = Diagonal(3, Position(1,1), 1, g, True)
-#     assert not diag.is_a_grouped_free_three()
+def test_rdiag3():
+    g = np.array([
+        [0,  0,  0,  0,  0, -1],
+        [0,  1,  1,  1,  0,  0],
+        [1,  0,  1,  1,  0,  0],
+        [0,  0,  1,  1,  1,  0],
+        [1,  1,  0,  1,  0,  0],
+        [0,  1,  0,  1,  1,  0]
+        ])
+    diag = Diagonal(3, Position(2,3), 1, g, False)
+    assert not diag.is_a_grouped_free_three()
 
 
-# def test_diag4():
-#     g = np.array([
-#         [-1, 0,  0,  0,  0, 0],
-#         [0,  0,  1,  1,  0, 0],
-#         [1,  0,  1,  0,  0, 0],
-#         [0,  0,  1,  1,  1, 0],
-#         [1,  1,  0,  1,  1, 0],
-#         [1,  1,  0,  1,  1, 0]
-#         ])
-#     diag = Diagonal(3, Position(2,2), 1, g, True)
-#     assert not diag.is_a_grouped_free_three()
+def test_rdiag4():
+    g = np.array([
+        [0,  0,  0,  0,  0, 0],
+        [0,  1,  1,  1,  1, 0],
+        [1,  0,  1,  1,  0, 0],
+        [0,  0,  1,  1,  1, 0],
+        [1,  0,  0,  1,  0, 0],
+        [-1, 1,  0,  1,  1, 0]
+        ])
+    diag = Diagonal(3, Position(1,4), 1, g, False)
+    assert not diag.is_a_grouped_free_three()
 
 
-# def test_diag5():
-#     g = np.array([
-#         [0,  0,  0,  0,  0, 0],
-#         [0, -1,  1,  1,  0, 0],
-#         [1,  0,  1,  0,  0, 0],
-#         [0,  0,  1,  1,  1, 0],
-#         [1,  1,  0,  1,  1, 0],
-#         [1,  1,  0,  1,  1, 0]
-#         ])
-#     diag = Diagonal(3, Position(2,2), 1, g, True)
-#     assert not diag.is_a_grouped_free_three()
+def test_rdiag5():
+    g = np.array([
+        [0,  0,  0,  0,  0, 0],
+        [0,  1,  1,  1,  1, 0],
+        [1,  0,  1,  1,  0, 0],
+        [0,  0,  1,  1,  1, 0],
+        [1, -1,  0,  1,  0, 0],
+        [0,  1,  0,  1,  1, 0]
+        ])
+    diag = Diagonal(3, Position(1,4), 1, g, False)
+    assert not diag.is_a_grouped_free_three()
