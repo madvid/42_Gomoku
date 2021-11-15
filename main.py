@@ -78,6 +78,10 @@ class MyWindow(QWidget):
 		self.setFixedHeight(W_HEIGHT)
 		self.setStyleSheet("background: #152338;")
 		
+		self.white = True
+		self.whitestone = []
+		self.blackstone = []
+
 		self.player_1 = None
 		self.player_2 = None
 		self.stack1 = QWidget()
@@ -422,6 +426,32 @@ class MyWindow(QWidget):
 			CHARACTERS["character_6"]["check"] = False
 			self.character_6.setStyleSheet(dct_stylesheet["character"])
 
+	def mousePressEvent(self, event):
+		def on_board(qpoint):
+			x, y = qpoint.x(), qpoint.y()
+			if (x >= 10) and (x <= 590) and (y >= 10) and (y <= 590):
+				return True
+			return False
+		
+
+		if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
+			current_stone =  QLabel("", self.board)
+			current_stone.setStyleSheet("background-color: transparent;")
+			if self.white:
+				px_stone = QPixmap("assets/stone_white.png")
+				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+				current_stone.setPixmap(px_stone)
+				self.whitestone.append(current_stone)
+				self.white = False
+			else:
+				px_stone = QPixmap("assets/stone_black.png")
+				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+				current_stone.setPixmap(px_stone)
+				self.blackstone.append(current_stone)
+				self.white = True
+			current_stone.move(event.pos().x() - 26, event.pos().y() - 26)
+			#self.stack3.addWidget(current_stone)
+			current_stone.show()
 
 def window():
 	app = QApplication(sys.argv)
