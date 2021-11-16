@@ -14,10 +14,6 @@ class Node():
         self.color = color
         self.nb_free_three = None # Attribute updated after the creation of the instance.
     
-    # def are_surounded(self) -> np.ndarray:
-    #     # Returns an array of bools. 
-    #     pass
-
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color

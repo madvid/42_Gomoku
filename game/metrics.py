@@ -38,9 +38,11 @@ class StoneSequence():
     def __init__(self, length: int, position: Position, color: int, grid: np.ndarray) -> None:
         self.length = length
         self.start = position
-        self.end = None
         self.color = color
         self.grid = grid
+        
+        # Attributes updated in the child classes
+        self.end = None
         self.distance_to_edge = None
 
     def _previous_idx(self, distance: int) -> Tuple[int, int]:
@@ -138,12 +140,12 @@ class Diagonal(StoneSequence):
         self.end = self.start + Position(length -1 , self.slope * (length -1))
         self.max_height = self.grid.shape[0] - 1
         self.max_width = self.grid.shape[1] - 1
-        self.distance_to_edge = self.get_distance_to_edge()
+        self.distance_to_edge = self._get_distance_to_edge()
 
     def __repr__(self) -> str:
         return f"Diagonal: {self.start}, {self.end}, {self.left}, {self.length}"
 
-    def get_distance_to_edge(self) -> Tuple[int,int]:
+    def _get_distance_to_edge(self) -> Tuple[int,int]:
         if self.left:
             return min(self.start[0], self.start[1]), min(self.max_height - self.end[0], self.max_width - self.end[1])
         else:
@@ -234,14 +236,16 @@ def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     return sequences
 
 
-def stone_sum(grid: np.ndarray, color: int) -> int:
+# def stone_sum(grid: np.ndarray, color: int) -> int:
+def stone_sum(grid: np.ndarray) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
-    return grid.sum() * color
+    return grid.sum() #* color
 
-def longest_line(grid: np.ndarray, color: int) -> int:
+# def longest_line(grid: np.ndarray, color: int) -> int:
+def longest_line(grid: np.ndarray) -> int:
     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
     black_max = max([measure_row(grid, BLACK), measure_col(grid, BLACK), measure_diag(grid, BLACK)])
     white_max = max([measure_row(grid, WHITE), measure_col(grid, WHITE), measure_diag(grid, WHITE)])
-    if color == BLACK:
-        return black_max - white_max
-    return white_max - black_max
+    # if color == BLACK:
+    return black_max - white_max
+    # return white_max - black_max
