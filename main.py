@@ -94,27 +94,27 @@ class MyWindow(QWidget):
 
     def __init__(self):
         super(MyWindow, self).__init__()
-
+        # Parameters of the window
         self.setWindowTitle("Gomoku by mdavid & ppeigne")
-        #self.setGeometry(200, 200, 1080, 720)
-        self.setFixedWidth(W_WIDTH)
-        self.setFixedHeight(W_HEIGHT)
+        self.setFixedSize(W_WIDTH, W_HEIGHT)
         self.setStyleSheet("background: #152338;")
 
+        # Widgets which matter for the update of the board (np.array)
         self.stone = 1 # 1 is white and -1 is black
         self.whitestone = []
         self.blackstone = []
 
+        # Related to character selection on screen 2
         self.player_1 = None
         self.player_2 = None
+        
+        # Multi screen in the window related widget
         self.stack1 = QWidget()
         self.stack2 = QWidget()
         self.stack3 = QWidget()
-
         self.stack1UI()
         self.stack2UI()
         self.stack3UI()
-
         self.Stack = QStackedWidget (self)
         self.Stack.addWidget (self.stack1)
         self.Stack.addWidget (self.stack2)
@@ -154,14 +154,13 @@ class MyWindow(QWidget):
 
         # Placing menu widgets in vertical layout:
         vlayout = QVBoxLayout()
-        #vlayout.setAlignment(QtCore.Qt.AlignCenter)
         vlayout.addStretch(1)
         vlayout.addWidget(self.logo_main)
         vlayout.addStretch(2)
         vlayout.addWidget(self.button_pvp)
         vlayout.addStretch(0)
         vlayout.addWidget(self.button_pva)
-        vlayout.addStretch(0)
+        vlayout.addStretch(1)
 
         # Placing the vertical layout into a horizontal layout (centering ?)
         layout = QHBoxLayout()
@@ -183,6 +182,17 @@ class MyWindow(QWidget):
         self.logo_select.setFixedSize(QtCore.QSize(*WIDGETS_WH["stack2_logo"]))
 
         # Buttons widget:
+        #self.character_1 = self.character_2 = self.character_3 = \
+        #    self.character_4 = self.character_5 = self.character_6 = None
+        #lst_wdgts = [self.character_1, self.character_2, self.character_3,
+        #             self.character_4, self.character_5, self.character_6
+        #            ]
+        #for ii, wdg in enumerate(lst_wdgts):
+        #    wdg = QPushButton("")
+        #    print(wdg)
+        #    wdg.setIcon(QtGui.QIcon(CHARACTERS[f"character_{ii + 1}"]["file"]))
+        #    wdg.setIconSize(QtCore.QSize(*WIDGETS_WH["stack2_imgcharacter"]))
+
         self.character_1 = QPushButton("")
         self.character_2 = QPushButton("")
         self.character_3 = QPushButton("")
