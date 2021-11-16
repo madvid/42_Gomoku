@@ -70,7 +70,7 @@ dct_stylesheet = {"menu_button": "*{border: 4px solid '#1B5DBF';" +
                                 "margin: 0px 0px;}" +
                                 "*:hover{background: 'red';}"}
 
-nodes_x , nodes_y = 31 * np.arange(1, 20), 25 * np.arange(1, 20)
+nodes_x , nodes_y = 31 * np.arange(1, 20), 31 * np.arange(1, 20)
 coords = np.array(np.meshgrid(nodes_x, nodes_y)).T.reshape(-1,2)
 
 
@@ -78,16 +78,16 @@ board = np.zeros((19, 19))
 
 def nearest_coord(point:npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
     ii = point[0] // 31
-    jj = point[1] // 25
+    jj = point[1] // 31
     if fabs(point[0] - ii * 31) >  fabs(point[0] - (ii + 1) * 31):
         ii += 1
-    if fabs(point[1] - jj * 25) >  fabs(point[1] - (jj + 1) * 25):
+    if fabs(point[1] - jj * 31) >  fabs(point[1] - (jj + 1) * 31):
         jj += 1
-    return np.array([ii * 31, jj * 25]) 
+    return np.array([ii * 31, jj * 31]) 
 
 
 def stone_to_board(coord:Tuple[int, int], color:int):
-    board[(coord[1] // 30) - 1, (coord[0] // 30) - 1] = color
+    board[(coord[1] // 31) - 1, (coord[0] // 31) - 1] = color
 
 
 class MyWindow(QWidget):
@@ -267,7 +267,8 @@ class MyWindow(QWidget):
         # Display logo
         self.board = QLabel("")
         board = QPixmap("assets/board.png")
-        board = board.scaled(590, 590, QtCore.Qt.KeepAspectRatio)
+        board = board.scaled(606, 606)
+        #board = board.scaled(606, 606, QtCore.Qt.KeepAspectRatio)
         self.board.setPixmap(board)
 
         self.label_p1 = QLabel("")
@@ -452,7 +453,7 @@ class MyWindow(QWidget):
     def mousePressEvent(self, event):
         def on_board(qpoint):
             x, y = qpoint.x(), qpoint.y()
-            if (x >= 28) and (x <= 580) and (y >= 45) and (y <= 590):
+            if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
                 return True
             return False
 
@@ -474,12 +475,12 @@ class MyWindow(QWidget):
 
             print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
             nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-            print(nearest)
+            #print(nearest)
             
             stone_to_board(nearest, self.stone)
             self.stone = - self.stone
-            print(board)
-            current_stone.move(nearest[0] - 26, nearest[1] - 26)
+            #print(board)
+            current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
             #self.stack3.addWidget(current_stone)
             current_stone.show()
 
