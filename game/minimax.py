@@ -12,12 +12,12 @@ class Solver():
             return node.score()
 
         if maximizingPlayer:
-            value = (float('-inf'), None)
+            value = float('-inf')
             for child in node.generate_next_moves():
                 value = max(value, self.minimax(child, depth-1, False))
                 return value
 
-        value = (float('inf'), None)
+        value = float('inf')
         for child in node.generate_next_moves():
             value = min(value, self.minimax(child, depth-1, True))
             return value
@@ -27,7 +27,7 @@ class Solver():
             return node.score()
 
         if maximizingPlayer:
-            value = (float('-inf'), None)
+            value = float('-inf')
             for child in node.generate_next_moves():
                 value = max(value, self.minimax(child, depth-1, alpha, beta, False))
                 alpha = max(value, alpha)
@@ -35,7 +35,7 @@ class Solver():
                     break
             return value
 
-        value = (float('inf'), None)
+        value = float('inf')
         for child in node.generate_next_moves():
             value = min(value, self.minimax(child, depth-1, alpha, beta, True))
             beta = min(value, beta)
@@ -45,8 +45,8 @@ class Solver():
 
     def negamax(self, node: Node, depth: int, color: int) -> int:
         if depth == 0 or node.is_terminal():
-            return node.score()
-
+            return node.score() * color
+        value = float('-inf')
         for child in node.generate_next_moves():
             value = max(value, -self.negamax(child, depth-1, -color))
         return value
@@ -54,8 +54,8 @@ class Solver():
 
     def negamax_ab(self, node: Node, depth: int, alpha: int, beta: int, color: int) -> int:
         if depth == 0 or node.is_terminal():
-            return node.score()
-
+            return node.score() * color
+        value = float('-inf')
         for child in node.generate_next_moves():
             value = max(value, -self.negamax(child, depth-1, -beta, -alpha, -color))
             alpha = max(value, alpha)

@@ -72,4 +72,4 @@ class Node():
         return possibles_moves
 
     def score(self) -> int:
-        return Node.metric[self.color](self.grid, self.color)
+        return Node.metric[self.color](self.grid) #, self.color)
