@@ -81,8 +81,6 @@ nodes_x , nodes_y = 31 * np.arange(1, 20), 31 * np.arange(1, 20)
 coords = np.array(np.meshgrid(nodes_x, nodes_y)).T.reshape(-1,2)
 
 
-board = np.zeros((19, 19))
-
 # =========================================================================== #
 # ___________________________    |FUNCTIONS|     ____________________________ #
 # =========================================================================== #
@@ -97,8 +95,8 @@ def nearest_coord(point:npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
     return np.array([int(ii) * 31, int(jj) * 31]) 
 
 
-def stone_to_board(coord:Tuple[int, int], color:int):
-    board[(coord[1] // 31) - 1, (coord[0] // 31) - 1] = color
+def stone_to_board(coord:Tuple[int, int], color:int, grid:np.array):
+    grid[(coord[1] // 31) - 1, (coord[0] // 31) - 1] = color
 
 
 # =========================================================================== #
@@ -451,7 +449,9 @@ class MyWindow(QWidget):
             nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
             #print(nearest)
             
-            stone_to_board(nearest, self.stone)
+            if not hasattr(self, 'grid'):
+                self.grid = np.zeros((19,19))
+            stone_to_board(nearest, self.stone, self.grid)
             self.stone = - self.stone
             #print(board)
             current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)

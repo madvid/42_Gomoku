@@ -7,8 +7,7 @@ import numpy as np
 
 
 class Game():
-    
     def __init__(self):
-        self.board = np.zeros((19,19))
+        self.grid = np.zeros((19,19))
         self.mywindow = mywindow()
         self.agent = solver()
