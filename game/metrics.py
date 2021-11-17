@@ -237,7 +237,7 @@ def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
 
 def stone_sum(grid: np.ndarray) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
-    return grid.sum() #* color
+    return grid.sum()
 
 def longest_line(grid: np.ndarray) -> int:
     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
