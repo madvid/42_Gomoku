@@ -64,8 +64,5 @@ class Solver():
         return value
 
     def find_best_move(self, current_state: Node) -> Node:
-        maximizing = current_state.color == 1
-        next_moves = [(self.minimax(n, self.depth, maximizing), n) for n in current_state.generate_next_moves()]
-        if maximizing:
-            return max(next_moves)[1]
-        return min(next_moves)[1]
+        next_moves = [(self.minimax(n, self.depth, current_state.color) * current_state.color, n) for n in current_state.generate_next_moves()]
+        return max(next_moves)[1]

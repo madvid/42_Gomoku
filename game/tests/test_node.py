@@ -27,14 +27,14 @@ def test_generate_next_moves():
     next_moves = [n.grid for n in node.generate_next_moves()]
 
     expected_res = [np.array([
-                        [1, 1, -1],
-                        [0, 1, 1],
-                        [1, 1, 1]
+                        [1,  1, -1],
+                        [0,  1,  1],
+                        [1,  1,  1]
                         ]), 
                         np.array([
-                        [1, 1, 0],
-                        [-1, 1, 1],
-                        [1, 1, 1]
+                        [1,  1,  0],
+                        [-1, 1,  1],
+                        [1,  1,  1]
                         ]
                         )]
 

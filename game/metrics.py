@@ -235,17 +235,15 @@ def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences.extend(measure_diag(grid, color))
     return sequences
 
-
-# def stone_sum(grid: np.ndarray, color: int) -> int:
 def stone_sum(grid: np.ndarray) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
     return grid.sum() #* color
 
-# def longest_line(grid: np.ndarray, color: int) -> int:
 def longest_line(grid: np.ndarray) -> int:
     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
-    black_max = max([measure_row(grid, BLACK), measure_col(grid, BLACK), measure_diag(grid, BLACK)])
-    white_max = max([measure_row(grid, WHITE), measure_col(grid, WHITE), measure_diag(grid, WHITE)])
-    # if color == BLACK:
+    black_seq = [x.length for x in collect_sequences(grid, BLACK)]
+    white_seq = [x.length for x in collect_sequences(grid, WHITE)]
+    black_max = max(black_seq) if black_seq != [] else 0
+    white_max = max(white_seq) if white_seq != [] else 0
+    
     return black_max - white_max
-    # return white_max - black_max
