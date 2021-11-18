@@ -32,7 +32,7 @@ class GameUI(MyWindow):
 	def __init__(self, gmode:int):
 		super(GameUI, self).__init__()
 		# Board creation, common for mywindow object and the Solver object
-		self.grid = np.zeros((19,19), dtype=np.int8)
+		self.grid = np.zeros((5,5), dtype=np.int8)
 		
 		# instance of Solver = generate the accessible moves from current node
 		self.agent = Solver(depth=1)
@@ -40,8 +40,7 @@ class GameUI(MyWindow):
 		# Initialization of the tree.
 		parent = Node(None, self.grid, -1)
 		parent.nb_free_three = 0
-		self.current_player = 1 # 1 for white, -1 black
-		self.node = Node(parent, self.grid, color=self.current_player)
+		self.node = Node(parent, self.grid, color=-self.stone)
 
 		self.gamemode = gmode
 		if self.gamemode == 1:
@@ -67,10 +66,11 @@ class GameUI(MyWindow):
 
 
 		if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
+			
 			current_stone =  QLabel("", self.wdgts_UI3["board"])
 			current_stone.setStyleSheet("background-color: transparent;")
 			# Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
-			if self.current_player == 1:
+			if self.stone == 1:
 				px_stone = QPixmap("assets/stone_white.png")
 				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
 				current_stone.setPixmap(px_stone)
@@ -88,9 +88,42 @@ class GameUI(MyWindow):
 			if not hasattr(self, 'grid'):
 				self.grid = np.zeros((19,19))
 			stone_to_board(nearest, self.stone, self.grid)
-			self.current_player = - self.current_player
 			current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
 			current_stone.show()
 
+			self.node = Node(self.node, self.grid, color=-self.stone)
+
+			print("before")
+			self.node = self.agent.find_best_move(self.node)
+			prev_grid = self.grid
+			self.grid = self.node.grid
+			print(self.grid)
+			dgrid = prev_grid - self.grid
+			coord = 31 * (np.argwhere(dgrid != 0) + 1)
 			
+			print("coord:", coord)			
+			stone_to_board(coord[0], self.stone, self.grid)
+			
+			ia_stone =  QLabel("", self.wdgts_UI3["board"])
+			ia_stone.setStyleSheet("background-color: transparent;")
+			
+			if self.node.color == 1:
+				px_stone = QPixmap("assets/stone_white.png")
+				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+				ia_stone.setPixmap(px_stone)
+				self.whitestone.append(ia_stone)
+			else:
+				px_stone = QPixmap("assets/stone_black.png")
+				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+				ia_stone.setPixmap(px_stone)
+				self.blackstone.append(ia_stone)
+			
+			ia_stone.move(int(1.02 * coord[0][1]) - 26, int(1.02 * coord[0][0]) - 26)
+			ia_stone.show()
+
+
+
+
+
+
 

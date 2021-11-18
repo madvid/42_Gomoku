@@ -3,11 +3,11 @@ import numpy as np
 import copy
 from typing import Tuple, List
 
-#from metrics import * 
+from game.metrics import *
 
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
-    metric: dict = {} # A dict containing the scoring metrics for black and white
+    metric: dict = {-1: sum_mask3, 1: sum_mask3} # A dict containing the scoring metrics for black and white
         
     def __init__(self, parent: Node, grid: np.ndarray, color: int) -> None:
         self.parent = parent
