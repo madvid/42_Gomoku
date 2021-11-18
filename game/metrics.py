@@ -7,7 +7,7 @@ BLACK = 1
 WHITE = -1
 
 class Position():
-    def __init__(self, i, j) -> None:
+    def __init__(self, i: int, j: int) -> None:
         self.i = i
         self.j = j
     
@@ -235,6 +235,11 @@ def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences.extend(measure_col(grid, color))
     sequences.extend(measure_diag(grid, color))
     return sequences
+
+# def update_sequences(grid: np.ndarray, color: int, sequences: List[StoneSequence], pos: Position) -> List[StoneSequence]:
+#     for s in sequences:
+#         if s.contains(pos):
+
 
 def stone_sum(grid: np.ndarray) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
