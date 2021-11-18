@@ -3,7 +3,11 @@ import numpy as np
 import copy
 from typing import Tuple, List
 
-from metrics import * 
+from measures import * 
+# from game import *  
+
+BLACK = 1
+WHITE = -1
 
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
@@ -14,7 +18,8 @@ class Node():
         self.grid = grid
         self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
-    
+        self.stone_seq = {BLACK:[], WHITE:[]}
+
     def is_terminal(self):
         # FIXME
         return False
@@ -59,11 +64,17 @@ class Node():
         possibles_moves_idx = np.argwhere(self.grid == 0)
         possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
         for m in possibles_moves:
-            stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
+            m.stone_seq[BLACK] = collect_sequences(m.grid, BLACK)
+            m.stone_seq[WHITE] = collect_sequences(m.grid, WHITE)
+            # stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
             # Captured stones
-            captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), stone_seq)
+            captured_black_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK])
+            captured_white_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[WHITE])
+            # captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK] + m.stone_seq[WHITE])
             # print(f"captured = {captured_stones[0].grid}")
-            m.grid = self.remove_sequences(m.grid, captured_stones)
+            m.grid = self.remove_sequences(m.grid, captured_black_stones + captured_white_stones)
+            m.stone_seq[BLACK] = [s for s in m.stone_seq[BLACK] if not (s.length == 2 and s.is_surrounded())]
+            m.stone_seq[WHITE] = [s for s in m.stone_seq[WHITE] if not (s.length == 2 and s.is_surrounded())]
 
             # # Double free-three
             # cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
@@ -81,4 +92,8 @@ class Node():
         return possibles_moves
 
     def score(self, color: int) -> int:
-        return Node.metric[color](self.grid)
+        return Node.metric[color](self)
+
+
+    # def score(self, color: int) -> int:
+    #     return Node.metric[color](self.grid)
