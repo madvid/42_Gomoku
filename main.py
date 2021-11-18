@@ -1,7 +1,10 @@
 # =========================================================================== #
 # ____________________  |Importation des lib/packages|   ____________________ #
 # =========================================================================== #
-from cls_game import game
+from cls_game import GameUI
+from PyQt5.QtWidgets import QApplication
+from PyQt5 import QtGui, QtCore
+import sys
 
 # =========================================================================== #
 #                          | constants definition |                           #
@@ -17,10 +20,8 @@ from cls_game import game
 # _________________________________ | MAIN | ________________________________ #
 # =========================================================================== #
 if __name__ == "__main__":
-    g = game()
-	for _ in range(10):
-	node = solver.find_best_move(node)
-	print('------------')
-	print(f'color: {node.color} | best score: {node.score()}')    
-	print(node.grid)
-	print('------------')
+	game_mode = {"PvP": 1, "PvIA": 2, "IAvIA": 3}
+	app = QApplication(sys.argv)
+	w_game = GameUI(gmode=game_mode["PvIA"])
+	w_game.show()
+	sys.exit(app.exec())

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from board import Node
+#from board import Node
 from typing import Tuple
 
 class Solver():

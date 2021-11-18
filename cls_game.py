@@ -1,11 +1,18 @@
 # =========================================================================== #
 # ____________________  |Importation des lib/packages|   ____________________ #
 # =========================================================================== #
-from interface.game_interface import MyWindow
+from __future__ import annotations
+
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, \
+	QVBoxLayout, QWidget, QGridLayout, QStackedWidget, QHBoxLayout, QVBoxLayout
+from PyQt5 import QtGui, QtCore
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QCursor
+
+from interface.game_interface import MyWindow, nearest_coord, stone_to_board
 from game.minimax import Solver
 from game.board import Node
 import numpy as np
-from __future__ import annotations
 
 # =========================================================================== #
 #                          | constants definition |                           #
@@ -21,13 +28,11 @@ from __future__ import annotations
 # =========================================================================== #
 #                           | Classes definition |                            #
 # =========================================================================== #
-class Game():
-	def __init__(self):
+class GameUI(MyWindow):
+	def __init__(self, gmode:int):
+		super(GameUI, self).__init__()
 		# Board creation, common for mywindow object and the Solver object
 		self.grid = np.zeros((19,19), dtype=np.int8)
-		
-		# instance of MyWindow = the UI object
-		self.mywindow = MyWindow()
 		
 		# instance of Solver = generate the accessible moves from current node
 		self.agent = Solver(depth=1)
@@ -35,4 +40,57 @@ class Game():
 		# Initialization of the tree.
 		parent = Node(None, self.grid, -1)
 		parent.nb_free_three = 0
-		self.node = Node(parent, self.grid, color=1)
+		self.current_player = 1 # 1 for white, -1 black
+		self.node = Node(parent, self.grid, color=self.current_player)
+
+		self.gamemode = gmode
+		if self.gamemode == 1:
+			self.p1_type = 'Human'
+			self.p2_type = 'Human'
+		elif self.gamemode == 2:
+			self.p1_type = 'Human'
+			self.p2_type = 'IA'
+		elif self.gamemode == 3:
+			self.p1_type = 'IA'
+			self.p2_type = 'IA'
+		
+		self.i_round = 0
+
+	def mousePressEvent(self, event):
+		#if (self.Stack.currentIndex() == 2):
+		#	super(GameUI, self).mouseMoveEvent(self.event)
+		def on_board(qpoint):
+			x, y = qpoint.x(), qpoint.y()
+			if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
+				return True
+			return False
+
+
+		if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
+			current_stone =  QLabel("", self.wdgts_UI3["board"])
+			current_stone.setStyleSheet("background-color: transparent;")
+			# Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
+			if self.current_player == 1:
+				px_stone = QPixmap("assets/stone_white.png")
+				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+				current_stone.setPixmap(px_stone)
+				self.whitestone.append(current_stone)
+			else:
+				px_stone = QPixmap("assets/stone_black.png")
+				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+				current_stone.setPixmap(px_stone)
+				self.blackstone.append(current_stone)
+
+			print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
+			nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
+			#print(nearest)
+			
+			if not hasattr(self, 'grid'):
+				self.grid = np.zeros((19,19))
+			stone_to_board(nearest, self.stone, self.grid)
+			self.current_player = - self.current_player
+			current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
+			current_stone.show()
+
+			
+
