@@ -1,4 +1,5 @@
 from __future__ import annotations
+from scipy import signal
 from typing import List, Tuple
 import numpy as np
 
@@ -235,17 +236,86 @@ def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences.extend(measure_diag(grid, color))
     return sequences
 
-
-# def stone_sum(grid: np.ndarray, color: int) -> int:
 def stone_sum(grid: np.ndarray) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
-    return grid.sum() #* color
+    return grid.sum()
 
-# def longest_line(grid: np.ndarray, color: int) -> int:
 def longest_line(grid: np.ndarray) -> int:
     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
-    black_max = max([measure_row(grid, BLACK), measure_col(grid, BLACK), measure_diag(grid, BLACK)])
-    white_max = max([measure_row(grid, WHITE), measure_col(grid, WHITE), measure_diag(grid, WHITE)])
-    # if color == BLACK:
+    black_seq = [x.length for x in collect_sequences(grid, BLACK)]
+    white_seq = [x.length for x in collect_sequences(grid, WHITE)]
+    black_max = max(black_seq) if black_seq != [] else 0
+    white_max = max(white_seq) if white_seq != [] else 0
     return black_max - white_max
-    # return white_max - black_max
+
+def sum_longest(grid: np.ndarray) -> int:
+    return longest_line(grid) + stone_sum(grid)
+
+def dummy_mask(grid: np.ndarray) -> int:
+    msk = np.array([
+        [1, 1, 1, 1, 1, 1],
+        [1, 2, 2, 2, 2, 1],
+        [1, 2, 3, 3, 2, 1],
+        [1, 2, 3, 3, 2, 1],
+        [1, 2, 2, 2, 2, 1],
+        [1, 1, 1, 1, 1, 1],
+    ])
+    return np.sum(grid * msk)
+
+
+def mask2(grid: np.ndarray) -> int:
+    kernel = np.array(
+    [
+        [1, 0, 1, 0, 1],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [1, 0, 1, 0, 1],
+    ]
+)
+    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+
+
+def mask3(grid: np.ndarray) -> int:
+    kernel = np.array(
+    [
+        [1, 0, 0, 1, 0, 0, 1],
+        [0, 1, 0, 1, 0, 1, 0],
+        [0, 0, 1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 1, 1, 1, 0, 0],
+        [0, 1, 0, 1, 0, 1, 0],
+        [1, 0, 0, 1, 0, 0, 1],
+    ]
+)
+    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+
+
+def mask4(grid: np.ndarray) -> int:
+    kernel = np.array(
+    [
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        [0, 1, 0, 0, 1, 0, 0, 1, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 1, 0, 0, 1, 0, 0, 1, 0],
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    ]
+)
+    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+
+
+def sum_dummy(grid: np.ndarray) -> int:
+    return dummy_mask(grid) + longest_line(grid)
+
+def sum_mask2(grid: np.ndarray) -> int:
+    return mask2(grid) + longest_line(grid)
+
+def sum_mask3(grid: np.ndarray) -> int:
+    return mask3(grid) + longest_line(grid)
+
+def sum_mask4(grid: np.ndarray) -> int:
+    return mask4(grid) + longest_line(grid)
