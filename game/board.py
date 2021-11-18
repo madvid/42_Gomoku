@@ -12,7 +12,7 @@ class Node():
     def __init__(self, parent: Node, grid: np.ndarray, color: int) -> None:
         self.parent = parent
         self.grid = grid
-        self.color = color
+        self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
     
     def is_terminal(self):
@@ -22,7 +22,7 @@ class Node():
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color
-        return Node(self, tmp_grid, color)
+        return Node(self, tmp_grid, color * -1)
 
     def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
         def remove_row(grid: np.ndarray, row: Row):
@@ -78,8 +78,7 @@ class Node():
             #     possibles_moves.remove(m)
 
             # FIXME: double three are allowed if resulting from a capture!
-
         return possibles_moves
 
-    def score(self) -> int:
-        return Node.metric[self.color](self.grid) #, self.color)
+    def score(self, color: int) -> int:
+        return Node.metric[color](self.grid)

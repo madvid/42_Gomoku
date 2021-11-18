@@ -7,9 +7,9 @@ class Solver():
     def __init__(self, depth: int) -> None:
         self.depth = depth
 
-    def minimax(self, node: Node, depth: int, maximizingPlayer: bool) -> int:
+    def minimax(self, node: Node, depth: int, maximizingPlayer: bool, starting_color: int) -> int:
         if depth == 0 or node.is_terminal():
-            return node.score()
+            return node.score(starting_color)
 
         if maximizingPlayer:
             value = float('-inf')
@@ -22,14 +22,14 @@ class Solver():
             value = min(value, self.minimax(child, depth-1, True))
             return value
     
-    def minimax_ab(self, node: Node, depth: int, alpha:int, beta:int, maximizingPlayer: bool) -> int:
+    def minimax_ab(self, node: Node, depth: int, alpha:int, beta:int, maximizingPlayer: bool, starting_color: int) -> int:
         if depth == 0 or node.is_terminal():
-            return node.score()
+            return node.score(starting_color)
 
         if maximizingPlayer:
             value = float('-inf')
             for child in node.generate_next_moves(node.color):
-                value = max(value, self.minimax_ab(child, depth-1, alpha, beta, False))
+                value = max(value, self.minimax_ab(child, depth-1, alpha, beta, False, starting_color))
                 alpha = max(value, alpha)
                 if alpha >= beta:
                     break
@@ -37,7 +37,7 @@ class Solver():
 
         value = float('inf')
         for child in node.generate_next_moves(node.color):
-            value = min(value, self.minimax_ab(child, depth-1, alpha, beta, True))
+            value = min(value, self.minimax_ab(child, depth-1, alpha, beta, True, starting_color))
             beta = min(value, beta)
             if alpha >= beta:
                 break
@@ -65,5 +65,10 @@ class Solver():
 
     def find_best_move(self, current_state: Node) -> Node:
         # next_moves = [(self.negamax_ab(n, self.depth, current_state.color, float('-inf'), float('inf')), n ) for n in current_state.generate_next_moves(current_state.color)]
-        next_moves = [(self.minimax_ab(n, self.depth, current_state.color == 1, float('-inf'), float('inf')), n ) for n in current_state.generate_next_moves(current_state.color)]
-        return max(next_moves, key= lambda x: x[0] * current_state.color)[1]
+        next_moves = [(self.minimax_ab(n, self.depth, current_state.color == -1, float('-inf'), float('inf'), current_state.color * -1), n ) for n in current_state.generate_next_moves(current_state.color)]
+        
+        if current_state.color == 1:
+            return max(next_moves, key= lambda x: x[0])[1]
+        else:
+            return min(next_moves, key= lambda x: x[0])[1]
+

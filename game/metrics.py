@@ -249,7 +249,7 @@ def longest_line(grid: np.ndarray) -> int:
     return black_max - white_max
 
 def sum_longest(grid: np.ndarray) -> int:
-    return longest_line(grid) + stone_sum(grid)
+    return longest_line(grid)**2 + stone_sum(grid)
 
 def dummy_mask(grid: np.ndarray) -> int:
     msk = np.array([
@@ -273,7 +273,8 @@ def mask2(grid: np.ndarray) -> int:
         [1, 0, 1, 0, 1],
     ]
 )
-    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+    mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+    return np.sum(mask * grid)
 
 
 def mask3(grid: np.ndarray) -> int:
@@ -288,7 +289,8 @@ def mask3(grid: np.ndarray) -> int:
         [1, 0, 0, 1, 0, 0, 1],
     ]
 )
-    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+    mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+    return np.sum(mask * grid)
 
 
 def mask4(grid: np.ndarray) -> int:
@@ -305,7 +307,8 @@ def mask4(grid: np.ndarray) -> int:
         [1, 0, 0, 0, 1, 0, 0, 0, 1],
     ]
 )
-    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+    mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+    return np.sum(mask * grid)
 
 
 def sum_dummy(grid: np.ndarray) -> int:
@@ -319,3 +322,57 @@ def sum_mask3(grid: np.ndarray) -> int:
 
 def sum_mask4(grid: np.ndarray) -> int:
     return mask4(grid) + longest_line(grid)
+
+
+def kern2(grid: np.ndarray) -> int:
+    kernel = np.array(
+    [
+        [1, 0, 1, 0, 1],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [1, 0, 1, 0, 1],
+    ]
+)
+    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+
+
+def kern3(grid: np.ndarray) -> int:
+    kernel = np.array(
+    [
+        [1, 0, 0, 1, 0, 0, 1],
+        [0, 1, 0, 1, 0, 1, 0],
+        [0, 0, 1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 1, 1, 1, 0, 0],
+        [0, 1, 0, 1, 0, 1, 0],
+        [1, 0, 0, 1, 0, 0, 1],
+    ]
+)
+    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+
+
+def kern4(grid: np.ndarray) -> int:
+    kernel = np.array(
+    [
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        [0, 1, 0, 0, 1, 0, 0, 1, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 1, 0, 0, 1, 0, 0, 1, 0],
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    ]
+)
+    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+
+def sum_kern2(grid: np.ndarray) -> int:
+    return kern2(grid) + longest_line(grid)
+
+def sum_kern3(grid: np.ndarray) -> int:
+    return kern3(grid) + longest_line(grid)
+
+def sum_kern4(grid: np.ndarray) -> int:
+    return kern4(grid) + longest_line(grid)
