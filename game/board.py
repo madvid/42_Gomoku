@@ -1,5 +1,6 @@
 from __future__ import annotations
 import numpy as np
+import copy
 from typing import Tuple, List
 
 from metrics import * 
@@ -14,6 +15,10 @@ class Node():
         self.color = color
         self.nb_free_three = None # Attribute updated after the creation of the instance.
     
+    def is_terminal(self):
+        # FIXME
+        return False
+
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color
@@ -44,14 +49,15 @@ class Node():
             Diagonal: remove_diag
         }
         for seq in sequences:
-            grid = rm_funcs[type(seq)](grid, seq)
-        
+            tmp_grid = copy.deepcopy(grid)
+            tmp_grid = rm_funcs[type(seq)](tmp_grid, seq)
+            grid = tmp_grid
         return grid
 
 
-    def generate_next_moves(self) -> List[Node]:
+    def generate_next_moves(self, color: int) -> List[Node]:
         possibles_moves_idx = np.argwhere(self.grid == 0)
-        possibles_moves = [self.update((x,y), self.color * -1) for x,y in possibles_moves_idx]
+        possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
         for m in possibles_moves:
             stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
             # Captured stones
@@ -59,13 +65,17 @@ class Node():
             # print(f"captured = {captured_stones[0].grid}")
             m.grid = self.remove_sequences(m.grid, captured_stones)
 
-            # Double free-three
-            cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
-            m.nb_free_three = len(list(filter(lambda x: x.is_a_free_three(), cleared_stone_seq)))
-            # FIXME: double-three share a common stone!
+            # # Double free-three
+            # cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
+            # m.nb_free_three = len(list(filter(lambda x: x.is_a_free_three(), cleared_stone_seq)))
+            # # FIXME: double-three share a common stone!
 
-            if m.nb_free_three == self.parent.nb_free_three + 2:
-                possibles_moves.remove(m)
+            # print(m.parent)
+            # print(m.nb_free_three)
+            # print(self.parent.nb_free_three)
+         
+            # if m.nb_free_three == self.parent.nb_free_three + 2:
+            #     possibles_moves.remove(m)
 
             # FIXME: double three are allowed if resulting from a capture!
 
