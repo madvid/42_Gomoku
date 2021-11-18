@@ -3,6 +3,7 @@
 # =========================================================================== #
 from interface.game_interface import mywindow
 from game.minimax import solver
+from game.board import Node
 import numpy as np
 from __future__ import annotations
 
@@ -21,7 +22,6 @@ def initiate_instance(g:Game):
 	color = 1
 	node = Node(parent, g, color)
 	
-
 
 # =========================================================================== #
 #                           | Classes definition |                            #
