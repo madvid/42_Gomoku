@@ -41,6 +41,33 @@ CHARACTERS = {"character 1":{"name":"Elon Musk", "file":"assets/pixel_elon.png",
 			  "character 5":{"name":"Pierre Peigne", "file":"assets/pixel_ppeigne.png", "check": False},
 			  "character 6":{"name":"Richard Feynman", "file":"assets/pixel_feynman.png", "check": False},}
 
+assets = {"button back": "assets/BACK.png",
+          "button play": "assets/PLAY.png",
+          "button pva": "assets/Player_vs_IA.png",
+          "button pvp": "assets/Player_vs_Player.png",
+          "button quit": "assets/QUIT.png",
+          "img_0": "assets/0.png",
+          "img_1": "assets/1.png",
+          "img_2": "assets/2.png",
+          "img_3": "assets/3.png",
+          "img_4": "assets/4.png",
+          "img_5": "assets/5.png",
+          "img_board": "assets/board.png",
+          "img_chrct_select": "assets/character_selection.png",
+          "img_gomoku": "assets/Gomoku.png",
+          "img_player1": "assets/Player1.png",
+          "img_player2": "assets/Player2.png",
+          "img_score": "assets/Score.png",
+          "chr_Elon": "assets/pixel_elon.png",
+          "chr_Feynman": "assets/pixel_feynman.png",
+          "chr_Lee_Sedol": "assets/pixel_lee_sedol.png",
+          "chr_Sophie": "assets/pixel_sophie.png",
+          "chr_Mdavid": "assets/pixel_mdavid.png",
+          "chr_Ppeigne": "assets/pixel_ppeigne.png",
+          "white_stone": "assets/stone_white.png",
+          "black_stone": "assets/stone_black.png",
+          }
+
 dct_stylesheet = {"menu_button": "*{border: 4px solid '#1B5DBF';" +
 								 "border-radius: 35px;" +
 								 "font-size: 15px;" +
@@ -136,7 +163,7 @@ class MyWindow(QWidget):
 	def stack1UI(self):
 		# -------- MAIN MENU FRAME -------- #
 		# Label (logo) widget
-		image_main = QPixmap("assets/Gomoku.png")
+		image_main = QPixmap(assets["img_gomoku"])
 		self.wdgts_UI1 = {"header": QLabel(),
 						  "button pvp": QPushButton("", self),
 						  "button pva": QPushButton("", self)
@@ -148,9 +175,9 @@ class MyWindow(QWidget):
 		self.wdgts_UI1["header"].resize(*WIDGETS_WH["stack1_logo"])
 
 		# Button widgets
-		for key, fname in zip(["button pvp", "button pva"], ["Player_vs_Player", "Player_vs_IA"]):
+		for key in ["button pvp", "button pva"]:
 			self.wdgts_UI1[key].setStyleSheet(dct_stylesheet["menu_button"])
-			self.wdgts_UI1[key].setIcon(QtGui.QIcon(f'assets/{fname}.png'))
+			self.wdgts_UI1[key].setIcon(QtGui.QIcon(assets[key]))
 			self.wdgts_UI1[key].setIconSize(QtCore.QSize(640,50))
 			self.wdgts_UI1[key].resize(*WIDGETS_WH[key])
 			self.wdgts_UI1[key].setCursor(QCursor(QtCore.Qt.PointingHandCursor))
@@ -247,18 +274,18 @@ class MyWindow(QWidget):
 						  "button quit": QPushButton("")
 						  }
 		# Display logo
-		img_board = QPixmap("assets/board.png")
+		img_board = QPixmap(assets["img_board"])
 		img_board = img_board.scaled(606, 606)
 		self.wdgts_UI3["board"].setPixmap(img_board)
 
-		self.wdgts_UI3["label p1"].setPixmap(QPixmap("assets/Player1.png"))
-		self.wdgts_UI3["label p2"].setPixmap(QPixmap("assets/Player2.png"))
-		self.wdgts_UI3["label score p1"].setPixmap(QPixmap("assets/Score.png"))
-		self.wdgts_UI3["label score p2"].setPixmap(QPixmap("assets/Score.png"))
-		self.wdgts_UI3["score p1"].setPixmap(QPixmap("assets/0.png"))
-		self.wdgts_UI3["score p2"].setPixmap(QPixmap("assets/0.png"))
+		self.wdgts_UI3["label p1"].setPixmap(QPixmap(assets["img_player1"]))
+		self.wdgts_UI3["label p2"].setPixmap(QPixmap(assets["img_player2"]))
+		self.wdgts_UI3["label score p1"].setPixmap(QPixmap(assets["img_score"]))
+		self.wdgts_UI3["label score p2"].setPixmap(QPixmap(assets["img_score"]))
+		self.wdgts_UI3["score p1"].setPixmap(QPixmap(assets["img_0"]))
+		self.wdgts_UI3["score p2"].setPixmap(QPixmap(assets["img_0"]))
 
-		self.wdgts_UI3["button quit"].setIcon(QtGui.QIcon('assets/QUIT.png'))
+		self.wdgts_UI3["button quit"].setIcon(QtGui.QIcon(assets["button quit"]))
 		self.wdgts_UI3["button quit"].setIconSize(QtCore.QSize(203,67))
 		self.wdgts_UI3["button quit"].setStyleSheet(dct_stylesheet["back_btn"])
 		self.wdgts_UI3["button quit"].clicked.connect(self.game_quit)
@@ -434,12 +461,12 @@ class MyWindow(QWidget):
 			current_stone.setStyleSheet("background-color: transparent;")
 			# Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
 			if self.stone == 1:
-				px_stone = QPixmap("assets/stone_white.png")
+				px_stone = QPixmap(assets["stone_white"])
 				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
 				current_stone.setPixmap(px_stone)
 				self.whitestone.append(current_stone)
 			else:
-				px_stone = QPixmap("assets/stone_black.png")
+				px_stone = QPixmap(assets["stone_black"])
 				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
 				current_stone.setPixmap(px_stone)
 				self.blackstone.append(current_stone)
