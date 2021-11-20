@@ -122,7 +122,9 @@ def nearest_coord(point:npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
 
 
 def stone_to_board(coord:Tuple[int, int], color:int, grid:np.array):
-	grid[(coord[1] // 31) - 1, (coord[0] // 31) - 1] = color
+	arr_idx = np.array([(coord[1] // 31) - 1, (coord[0] // 31) - 1])
+	grid[arr_idx[0], arr_idx[1]] = color
+	return arr_idx
 
 
 # =========================================================================== #
@@ -271,7 +273,8 @@ class MyWindow(QWidget):
 						  "label score p2": QLabel(),
 						  "score p1": QLabel(),
 						  "score p2": QLabel(),
-						  "button quit": QPushButton("")
+						  "button quit": QPushButton(""),
+						  "button cancel": QPushButton("")
 						  }
 		# Display logo
 		img_board = QPixmap(assets["img_board"])
@@ -307,7 +310,7 @@ class MyWindow(QWidget):
 		grid.addWidget(self.wdgts_UI3["label p2"], 2, 5, 1, 2, alignment=QtCore.Qt.AlignLeft)
 		grid.addWidget(self.wdgts_UI3["label score p2"], 3, 5, alignment=QtCore.Qt.AlignLeft)
 		grid.addWidget(self.wdgts_UI3["score p2"], 3, 6)
-		grid.addWidget(self.wdgts_UI3["button quit"], 4, 2, 1, 2)
+		grid.addWidget(self.wdgts_UI3["button quit"], 4, 0, 1, 2)
 		self.stack3.setLayout(grid)
 
 
@@ -325,6 +328,7 @@ class MyWindow(QWidget):
 
 	def game_back(self):
 		self.Stack.setCurrentIndex(0)
+
 
 	def game_quit(self):
 		self.Stack.setCurrentIndex(0)
