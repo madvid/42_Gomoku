@@ -46,6 +46,8 @@ assets = {"button back": "assets/BACK.png",
           "button pva": "assets/Player_vs_IA.png",
           "button pvp": "assets/Player_vs_Player.png",
           "button quit": "assets/QUIT.png",
+		  "button backward": "assets/BACKWARD.png",
+		  "button forward": "assets/FORWARD.png",
           "img_0": "assets/0.png",
           "img_1": "assets/1.png",
           "img_2": "assets/2.png",
@@ -102,7 +104,21 @@ dct_stylesheet = {"menu_button": "*{border: 4px solid '#1B5DBF';" +
 								"color: white;" +
 								"padding: 0px 0px;" +
 								"margin: 0px 0px;}" +
-								"*:hover{background: 'red';}"}
+								"*:hover{background: 'red';}",
+				 "backwrd_btn": "*{background: '#0B3D6F';" +
+								"border-radius: 20px;" +
+								"font-size: 20px;" +
+								"color: white;" +
+								"padding: 0px 0px;" +
+								"margin: 0px 0px;}" +
+								"*:hover{background: '#33B8FF';}",
+				 "forwrd_btn": "*{background: '#48BCD7';" +
+								"border-radius: 20px;" +
+								"font-size: 20px;" +
+								"color: white;" +
+								"padding: 0px 0px;" +
+								"margin: 0px 0px;}" +
+								"*:hover{background: '#ABE1ED';}"}
 
 nodes_x , nodes_y = 31 * np.arange(1, 20), 31 * np.arange(1, 20)
 coords = np.array(np.meshgrid(nodes_x, nodes_y)).T.reshape(-1,2)
@@ -274,7 +290,8 @@ class MyWindow(QWidget):
 						  "score p1": QLabel(),
 						  "score p2": QLabel(),
 						  "button quit": QPushButton(""),
-						  "button cancel": QPushButton("")
+						  "button backward": QPushButton(""),
+						  "button forward": QPushButton("")
 						  }
 		# Display logo
 		img_board = QPixmap(assets["img_board"])
@@ -292,6 +309,16 @@ class MyWindow(QWidget):
 		self.wdgts_UI3["button quit"].setIconSize(QtCore.QSize(203,67))
 		self.wdgts_UI3["button quit"].setStyleSheet(dct_stylesheet["back_btn"])
 		self.wdgts_UI3["button quit"].clicked.connect(self.game_quit)
+
+		self.wdgts_UI3["button backward"].setIcon(QtGui.QIcon(assets["button backward"]))
+		self.wdgts_UI3["button backward"].setIconSize(QtCore.QSize(203,67))
+		self.wdgts_UI3["button backward"].setStyleSheet(dct_stylesheet["backwrd_btn"])
+		self.wdgts_UI3["button backward"].clicked.connect(self.game_backward)
+
+		self.wdgts_UI3["button forward"].setIcon(QtGui.QIcon(assets["button forward"]))
+		self.wdgts_UI3["button forward"].setIconSize(QtCore.QSize(203,67))
+		self.wdgts_UI3["button forward"].setStyleSheet(dct_stylesheet["forwrd_btn"])
+		self.wdgts_UI3["button forward"].clicked.connect(self.game_forward)
 
 		self.wdgts_UI3["board"].adjustSize()
 		self.wdgts_UI3["label p1"].adjustSize()
@@ -311,6 +338,8 @@ class MyWindow(QWidget):
 		grid.addWidget(self.wdgts_UI3["label score p2"], 3, 5, alignment=QtCore.Qt.AlignLeft)
 		grid.addWidget(self.wdgts_UI3["score p2"], 3, 6)
 		grid.addWidget(self.wdgts_UI3["button quit"], 4, 0, 1, 2)
+		grid.addWidget(self.wdgts_UI3["button backward"], 4, 2, 1, 1)
+		grid.addWidget(self.wdgts_UI3["button forward"], 4, 3, 1, 1)
 		self.stack3.setLayout(grid)
 
 
@@ -337,6 +366,14 @@ class MyWindow(QWidget):
 	def game_play(self):
 		if (self.player_1 != None) and (self.player_2 != None):
 			self.Stack.setCurrentIndex(2)
+
+
+	def game_backward(self):
+		pass
+
+
+	def game_forward(self):
+		pass
 
 
 	def select_character_1(self):
