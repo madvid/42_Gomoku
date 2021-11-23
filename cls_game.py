@@ -18,7 +18,7 @@ import numpy as np
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
-assets = {"button cancel": "assets/Cancel.png"}
+#assets = {"button cancel": "assets/Cancel.png"}
 dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
 				 "border-radius: 20px;" +
 				 "font-size: 20px;" +
@@ -31,7 +31,7 @@ dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
 #                          | fonctions definition |                           #
 # =========================================================================== #
 
-	
+
 
 # =========================================================================== #
 #                           | Classes definition |                            #
@@ -64,16 +64,45 @@ class GameUI(MyWindow):
 		self.i_round = 0
 		self.history = History()
 
+
+	def game_backward(self):
+		"""[summary]
+		"""
+		pass
+
+
+	def game_forward(self):
+		"""[summary]
+		"""
+		pass
+
+
+	def _subboard_4_Conv2D(self, k_shape):
+		"""[summary]
+		"""
+		pass
+
+	def _my_conv2D(self, kernel):
+		"""[summary]
+		"""
+		pass
+
+
+	def check_board(self):
+		"""[summary]
+		"""
+
+		pass
+
+
 	def remove_stone(self, idx, color):
 		idx.reverse()
 		if color == "white":
 			for ii in idx:
-				print(ii)
 				self.whitestone[ii][0].deleteLater()
 				del(self.whitestone[ii])
 		if color == "black":
 			for ii in idx:
-				print(ii)
 				self.blackstone[ii][0].deleteLater()
 				del(self.blackstone[ii])
 
@@ -102,6 +131,15 @@ class GameUI(MyWindow):
 			self.remove_stone(l_remove, "white")
 			
 	def placing_stone(self, event, color):
+		"""Creates and move and display the widget corresponding to the new
+			stone (white/black) according to the coordinates in event (when
+			clicking or when the algorithm is playing).
+			The new stone is appended in the list of whitestone/blackstone
+			widgets representing all the existing stones on the board.
+		Args:
+			event (QtGui.QMouseEvent / np.array): we are interessed by the coordinates
+			color (int): 1 == white and -1 == black
+		"""
 		current_stone =  QLabel("", self.wdgts_UI3["board"])
 		current_stone.setStyleSheet("background-color: transparent;")
 		
@@ -126,24 +164,17 @@ class GameUI(MyWindow):
 		current_stone.move(nearest[0] - 26, nearest[1] - 26)
 		current_stone.show()
 
-	#def stack3UI(self):
-	#    super(GameUI).stack3UI()
-	#    self.wdgts_UI3["button cancel"].setIcon(QtGui.QIcon(assets["button cancel"]))
-	#    self.wdgts_UI3["button cancel"].setIconSize(QtCore.QSize(203,67))
-	#    self.wdgts_UI3["button cancel"].setStyleSheet(dct_stylesheet["cancel_btn"])
-	#    self.wdgts_UI3["button cancel"].clicked.connect(self.game_cancel)
-	#    grid.addWidget(self.wdgts_UI3["button cancel"], 4, 2, 1, 2)
-
-	def game_backward(self):
-		pass
-
-
-	def game_forward(self):
-		pass
-
 
 	def mousePressEvent(self, event):
 		def on_board(qpoint):
+			"""Checks if the position of the mouse click event is on the
+				game board.
+			Args:
+				qpoint ([QtCore.QPoint]): coordinates in the plane of the cursor
+
+			Returns:
+				[bool]: True if click is inside the board, False otherwise.y
+			"""
 			x, y = qpoint.x(), qpoint.y()
 			if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
 				return True
@@ -154,14 +185,15 @@ class GameUI(MyWindow):
 				self.grid = np.zeros((19,19))
 			
 			self.placing_stone(event, self.stone)
+			self.check_board()
 			self.update_board(self.stone)
 
 			self.node = Node(self.node, self.grid, color=-self.stone)
-			self.history.add_nodes(self.node)
+			self.history.add_nodes([self.node])
 			self.stone = self.node.color
 
 			self.node = self.agent.find_best_move(self.node)
-			self.history.add_nodes(self.node)
+			self.history.add_nodes([self.node])
 			prev_grid = self.grid
 			self.grid = self.node.grid
 			dgrid = prev_grid - self.grid

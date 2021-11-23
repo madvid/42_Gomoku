@@ -1,9 +1,9 @@
 # =========================================================================== #
 # ____________________  |Importation des lib/packages|   ____________________ #
 # =========================================================================== #
-import numpy as np
 from __future__ import annotations
-from board import Node
+import numpy as np
+#from board import Node
 
 # =========================================================================== #
 # ___________________________    |CONSTANTES|    ____________________________ #
@@ -23,8 +23,8 @@ class BoardConfig():
 	ROUND = 0
 
 	def __init__(self,player:int, count_round=True):
-		self.coordinates = {"white": np.array([[]]),
-							"black": np.array([[]])
+		self.coordinates = {"white": None,
+							"black": None
 							}
 		self.who_played = player
 		if count_round:
@@ -37,9 +37,15 @@ class BoardConfig():
 			raise ValueError("coordinates has wrong shape: expected (x, 2).")
 
 		if color == 1: #white player
-			self.coordinates["white"].append(coordinates)
+			if self.coordinates["white"] is None:
+				self.coordinates["white"] = coordinates
+			else:
+				np.append(self.coordinates["white"], coordinates, axis=0)
 		if color == -1: #black player
-			self.coordinates["black"].append(coordinates)
+			if self.coordinates["black"] is None:
+				self.coordinates["black"] = coordinates
+			else:
+				np.append(self.coordinates["black"], coordinates, axis=0)
 
 
 	def _coord2board(self) -> np.array:
@@ -67,7 +73,7 @@ class History():
 
 
 	def node2boardconfig(self, node:Node) -> BoardConfig:
-		current_player = Node.color
+		current_player = node.color
 		new_config = BoardConfig(current_player, count_round=False)
 		black_coordinates = self.catch_coordinates(node.grid, -1)
 		white_coordinates = self.catch_coordinates(node.grid, 1)
@@ -76,10 +82,10 @@ class History():
 		return new_config
 
 
-	def add_nodes(self, l_node:Node):
+	def add_nodes(self, l_node:List[Node]):
 		for n in l_node:
 			bc = self.node2boardconfig(n)
-			self.history.extend(bc)
+			self.history.append(bc)
 			self.i_current += 1
 
 
