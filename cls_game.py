@@ -357,20 +357,20 @@ class GameUI(MyWindow):
             self.stone = self.node.color
 
             self.node = self.agent.find_best_move(self.node)
-            self.history.add_nodes([self.node])
-            prev_grid = self.grid
-            self.grid = self.node.grid
-            dgrid = prev_grid - self.grid
-            #coord = 31 * (np.argwhere(dgrid != 0)[0]) + 26
+            if self.node != None:
+                self.history.add_nodes([self.node])
+                prev_grid = self.grid
+                self.grid = self.node.grid
+                dgrid = prev_grid - self.grid
 
-            self.UiDestroyBoard()
-            self.UiGenBoard()
-            print("<><><>  GRID Agent  <><><>")
-            print(self.grid)
-            print("<><><> <><><><><><> <><><>")
-            ##print(f"[AGENT]< {np.argwhere(dgrid != 0)[0]} -> {coord}  >\n", self.grid)
-            ##print("<><><><><><><><><><><><>")
-            #self.placing_stone(coord, self.stone)
-            #self.update_board(self.stone)
-            self.stone *= -1
+                self.UiDestroyBoard()
+                self.UiGenBoard()
+                print("<><><>  GRID Agent  <><><>")
+                print(self.grid)
+                print("<><><> <><><><><><> <><><>")
+                ##print(f"[AGENT]< {np.argwhere(dgrid != 0)[0]} -> {coord}  >\n", self.grid)
+                ##print("<><><><><><><><><><><><>")
+                #self.placing_stone(coord, self.stone)
+                #self.update_board(self.stone)
+                self.stone *= -1
 
