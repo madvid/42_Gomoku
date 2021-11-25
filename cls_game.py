@@ -56,6 +56,8 @@ class GameUI(MyWindow):
         self.grid = np.zeros((6,6), dtype=np.int8)
         self.W_whitestones = []
         self.W_blackstones = []
+        self.coord_whitestones = []
+        self.coord_blackstones = []
 
         # instance of Solver = generate the accessible moves from current node
         self.agent = Solver(depth=1)
@@ -144,6 +146,12 @@ class GameUI(MyWindow):
         conv_lin1 = self._my_conv2D(k_lines[0])
         conv_lin2 = self._my_conv2D(k_lines[1])
         
+        print("||||||||||||||||||||||||||")
+        print("conv_diag1:\n", conv_diag1)
+        print("conv_diag2:\n", conv_diag2)
+        print("conv_lin1:\n", conv_lin1)
+        print("conv_lin2:\n", conv_lin2)
+        print("||||||||||||||||||||||||||")
         coord_cd1 = np.argwhere(conv_diag1 == 1)
         coord_cd2 = np.argwhere(conv_diag2 == 1)
         coord_cl1 = np.argwhere(conv_lin1 == 1)
@@ -172,8 +180,14 @@ class GameUI(MyWindow):
         # Checking vertical and horizontal
         conv_lin1 = self._my_conv2D(-1 * k_lines[0])
         conv_lin2 = self._my_conv2D(-1 * k_lines[1])
-        print(conv_lin1)
-        print(conv_lin2)
+
+        print("||||||||||||||||||||||||||")
+        print("conv_diag1:\n", conv_diag1)
+        print("conv_diag2:\n", conv_diag2)
+        print("conv_lin1:\n", conv_lin1)
+        print("conv_lin2:\n", conv_lin2)
+        print("||||||||||||||||||||||||||")
+        
         coord_cd1 = np.argwhere(conv_diag1 == 1)
         coord_cd2 = np.argwhere(conv_diag2 == 1)
         coord_cl1 = np.argwhere(conv_lin1 == 1)
@@ -196,18 +210,6 @@ class GameUI(MyWindow):
                 self.grid[coord[0] + 2][coord[1]] = 0
 
 
-    def remove_stone(self, idx, color):
-        idx.reverse()
-        if color == "white":
-            for ii in idx:
-                self.whitestone[ii][0].deleteLater()
-                del(self.whitestone[ii])
-        if color == "black":
-            for ii in idx:
-                self.blackstone[ii][0].deleteLater()
-                del(self.blackstone[ii])
-
-
     def update_board(self, color:int):
         """ Update the board after the player/IA played.
         Update is called to remove stone which has been captured.
@@ -219,17 +221,25 @@ class GameUI(MyWindow):
         Possibilité de simplifier la fonction si whitestone et blackstone
         sont dans un dictionnaire avec comme clef "white" et "black"
         """
-        l_remove = []
-        if color == 1: # white
-            for ii, stone in enumerate(self.blackstone):
-                if self.grid[stone[1][0], stone[1][1]] == 0:
-                    l_remove.append(ii)
-            self.remove_stone(l_remove, "black")
-        if color == -1: # black
-            for ii, stone in enumerate(self.whitestone):
-                if self.grid[stone[1][0], stone[1][1]] == 0:
-                    l_remove.append(ii)
-            self.remove_stone(l_remove, "white")
+        idx = []
+        if color == 1: # black
+            for ii, xy in enumerate(self.coord_blackstones):
+                if self.grid[xy[0], xy[1]] == 0:
+                    idx.append(ii - 1)
+            idx.reverse()
+            for ii in idx:
+                self.W_blackstones[ii].deleteLater()
+                del(self.W_blackstones[ii])
+
+        idx = []
+        if color == -1: # white
+            for ii, xy in enumerate(self.coord_whitestones):
+                if self.grid[xy[0], xy[1]] == 0:
+                    idx.append(ii - 1)
+            idx.reverse()
+            for ii in idx:
+                self.W_whitestones[ii].deleteLater()
+                del(self.W_whitestones[ii])
 
     def isposition_available(self, event) -> bool:
         """Checks if the position for the stone the player wants
@@ -303,42 +313,40 @@ class GameUI(MyWindow):
     def UiGenBoard(self):
         """
         """
-        blackstones = np.argwhere(self.grid == -1)
-        whitestones = np.argwhere(self.grid == 1)
+        self.coord_blackstones= np.argwhere(self.grid == -1)
+        self.coord_whitestones = np.argwhere(self.grid == 1)
         
-        for coord in blackstones:
+        for bs in self.coord_blackstones:
             stone = QLabel("", self.wdgts_UI3["board"])
             stone.setStyleSheet("background-color: transparent;")
             px_stone = QPixmap(assets["black_stone"]).scaled(26, 26, QtCore.Qt.KeepAspectRatio)
             stone.setPixmap(px_stone)
-            self.W_whitestones.append((stone, coord))
+            xy = (31 * bs[::-1] + 6).astype('int32')
+            stone.move(xy[0], xy[1])
+            stone.show()
+            self.W_blackstones.append(stone)
 
-        for coord in whitestones:
+        for ws in self.coord_whitestones:
             stone = QLabel("", self.wdgts_UI3["board"])
             stone.setStyleSheet("background-color: transparent;")
             px_stone = QPixmap(assets["white_stone"]).scaled(26, 26, QtCore.Qt.KeepAspectRatio)
             stone.setPixmap(px_stone)
-            self.W_whitestones.append((stone, coord))
+            xy = (31 * ws[::-1] + 6).astype('int32')
+            stone.move(xy[0], xy[1])
+            stone.show()
+            self.W_whitestones.append(stone)
 
-        for wstone in self.W_whitestones:
-            xy = (31 * wstone[1][::-1] + 6).astype('int32')
-            wstone[0].move(xy[0], xy[1])
-            wstone[0].show()
-        for wstone in self.W_blackstones:
-            xy = (31 * wstone[1][::-1] + 6).astype('int32')
-            wstone[0].move(xy[0], xy[1])
-            wstone[0].show()
 
     def UiDestroyBoard(self):
         """
         """
         for ii in range(0, len(self.W_whitestones)):
-            self.W_whitestones[ii][0].deleteLater()
+            self.W_whitestones[ii].deleteLater()
         del(self.W_whitestones)
         self.W_whitestones = []
         
         for ii in range(0, len(self.W_blackstones), -1):
-            self.W_blackstones[ii][0].deleteLater()
+            self.W_blackstones[ii].deleteLater()
         del(self.W_blackstones)
         self.W_blackstones = []
 
@@ -366,6 +374,8 @@ class GameUI(MyWindow):
             if not self.isposition_available(event):
                 return
             self.placing_stone(event, self.stone)
+            self.check_board()
+            print("couleur du joueur (self.stone) = ", self.stone)
             self.update_board(self.stone)
             self.UiDestroyBoard()
             self.UiGenBoard()

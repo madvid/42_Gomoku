@@ -158,12 +158,14 @@ class MyWindow(QWidget):
 
 		# Widgets which matter for the update of the board (np.array)
 		self.stone = 1 # 1 is white and -1 is black
-		self.whitestone = []
-		self.blackstone = []
+		self.W_whitestones = []
+		self.W_blackstones = []
 
 		# Related to character selection on screen 2
 		self.player_1 = None
 		self.player_2 = None
+		self.p1_type = None
+		self.p2_type = None
 		
 		# Multi screen in the window related widget
 		self.stack1 = QWidget()
@@ -218,8 +220,7 @@ class MyWindow(QWidget):
 		layout.addStretch(1)
 		self.stack1.setLayout(layout)
 		self.stack1.setLayout(vlayout)
-
-
+		
 
 	def stack2UI(self):
 		# -------- SELECT PERSO FRAME -------- #
@@ -348,18 +349,47 @@ class MyWindow(QWidget):
 
 
 	def game_pvp(self):
+		self.p1_type = "Human"
+		self.p2_type = "Human"
 		self.Stack.setCurrentIndex(1)
 
 
 	def game_pva(self):
+		self.p1_type = "Human"
+		self.p2_type = "IA"
 		self.Stack.setCurrentIndex(1)
 
 
 	def game_back(self):
+		self.p1_type = None
+		self.p2_type = None
+		self.player_1 = None
+		self.player_2 = None
+		for ii in range(1,7):
+			CHARACTERS[f"character {ii}"]["check"] = False
+			self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
+
 		self.Stack.setCurrentIndex(0)
 
 
 	def game_quit(self):
+		self.p1_type = None
+		self.p2_type = None
+		self.player_1 = None
+		self.player_2 = None
+		for ii in range(1,7):
+			CHARACTERS[f"character {ii}"]["check"] = False
+			self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
+		
+		for ii in range(len(self.W_whitestones)):
+			self.W_whitestones[ii].deleteLater()
+		for ii in range(len(self.W_blackstones)):
+			self.W_blackstones[ii].deleteLater()
+		del(self.W_whitestones)
+		del(self.W_blackstones)
+		self.W_whitestones = []
+		self.W_blackstones = []
+		self.grid[:,:] = 0
 		self.Stack.setCurrentIndex(0)
 
 
@@ -505,12 +535,12 @@ class MyWindow(QWidget):
 				px_stone = QPixmap(assets["stone_white"])
 				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
 				current_stone.setPixmap(px_stone)
-				self.whitestone.append(current_stone)
+				self.W_whitestones.append(current_stone)
 			else:
 				px_stone = QPixmap(assets["stone_black"])
 				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
 				current_stone.setPixmap(px_stone)
-				self.blackstone.append(current_stone)
+				self.W_blackstones.append(current_stone)
 
 			print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
 			nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
