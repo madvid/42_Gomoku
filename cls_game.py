@@ -53,7 +53,7 @@ class GameUI(MyWindow):
     def __init__(self, gmode:int):
         super(GameUI, self).__init__()
         # Board creation, common for mywindow object and the Solver object
-        self.grid = np.zeros((5,5), dtype=np.int8)
+        self.grid = np.zeros((6,6), dtype=np.int8)
         self.W_whitestones = []
         self.W_blackstones = []
 
@@ -83,14 +83,21 @@ class GameUI(MyWindow):
     def game_backward(self):
         """[summary]
         """
-        pass
+        if self.history.i_current > 0:
+            self.history.i_current -= 1
+            self.grid = self.history.lst_nodes[self.history.i_current]
+            self.UiDestroyBoard()
+            self.UiGenBoard()
 
 
     def game_forward(self):
         """[summary]
         """
-        pass
-
+        if self.history.i_current < self.history.tot_nodes:
+            self.history.i_current += 1
+            self.grid = self.history.lst_nodes[self.history.i_current]
+            self.UiDestroyBoard()
+            self.UiGenBoard()
 
     def _subboard_4_Conv2D(self, k_shape:tuple, stride:tuple) -> np.array:
         """ Generates the sub view of the grid to be multiply with the kernel.
@@ -206,7 +213,7 @@ class GameUI(MyWindow):
         Update is called to remove stone which has been captured.
         Args:
         -----
-            color ([int]): color of the last stone put on the board
+            color (int): color of the last stone put on the board
         Amelioration:
         -------------
         Possibilité de simplifier la fonction si whitestone et blackstone
@@ -224,6 +231,23 @@ class GameUI(MyWindow):
                     l_remove.append(ii)
             self.remove_stone(l_remove, "white")
 
+    def isposition_available(self, event) -> bool:
+        """Checks if the position for the stone the player wants
+        to play is empty.
+        Args:
+        -----
+            event (QtGui.QMouseEvent): Coordinates of mouse cursor
+        Returns:
+        --------
+            (bool): boolean traducing if position is available.
+        """
+        nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
+        if self.grid[nearest[1] // 31 -1][nearest[0] // 31 -1] != 0:
+            print("position is not available.")
+            return False
+        return True
+        
+
     def placing_stone(self, event, color):
         """Creates and move and display the widget corresponding to the new
             stone (white/black) according to the coordinates in event (when
@@ -232,13 +256,13 @@ class GameUI(MyWindow):
             widgets representing all the existing stones on the board.
         Args:
         -----
-            event (QtGui.QMouseEvent / np.array): we are interessed by the coordinates
+            event (QtGui.QMouseEvent): coordinates of mouse cursor.
             color (int): 1 == white and -1 == black
         """
         if isinstance(event, QtGui.QMouseEvent):
             nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-            print("NEAREST = ", nearest)
-            stone_to_board(nearest, self.stone, self.grid)
+            coord = stone_to_board(nearest, self.stone, self.grid)
+            self.grid[coord[0], coord[1]] = self.stone
                 
     #def placing_stone(self, event, color):
     #    """Creates and move and display the widget corresponding to the new
@@ -325,10 +349,10 @@ class GameUI(MyWindow):
                 game board.
             Args:
             -----
-                qpoint ([QtCore.QPoint]): coordinates in the plane of the cursor
+                qpoint (QtCore.QPoint): coordinates in the plane of the cursor
             Returns:
             --------
-                [bool]: True if click is inside the board, False otherwise.y
+                (bool): True if click is inside the board, False otherwise.y
             """
             x, y = qpoint.x(), qpoint.y()
             if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
@@ -339,24 +363,24 @@ class GameUI(MyWindow):
             if not hasattr(self, 'grid'):
                 self.grid = np.zeros((19,19))
             
+            if not self.isposition_available(event):
+                return
             self.placing_stone(event, self.stone)
+            self.update_board(self.stone)
             self.UiDestroyBoard()
             self.UiGenBoard()
-            print("<><><> GRID Player  <><><>")
-            print(self.grid)
-            print("<><><> <><><><><><> <><><>")
-            #self.placing_stone(event, self.stone)
-            ##print("[Player]<Before CHECK:>\n", self.grid)
-            #self.check_board()
-            #self.update_board(self.stone)
-            ##print("[Player]<After CHECK>\n", self.grid)
-            ##print("<><><><><><><><><><><><>")
+            #print("<><><> GRID Player  <><><>")
+            #print(self.grid)
+            #print("<><><> <><><><><><> <><><>")
 
             self.node = Node(self.node, self.grid, color=-self.stone)
             self.history.add_nodes([self.node])
             self.stone = self.node.color
 
             self.node = self.agent.find_best_move(self.node)
+            #print("<><><>  GRID Agent  <><><>")
+            #print(self.node.grid)
+            #print("<><><> <><><><><><> <><><>")
             if self.node != None:
                 self.history.add_nodes([self.node])
                 prev_grid = self.grid
@@ -365,12 +389,5 @@ class GameUI(MyWindow):
 
                 self.UiDestroyBoard()
                 self.UiGenBoard()
-                print("<><><>  GRID Agent  <><><>")
-                print(self.grid)
-                print("<><><> <><><><><><> <><><>")
-                ##print(f"[AGENT]< {np.argwhere(dgrid != 0)[0]} -> {coord}  >\n", self.grid)
-                ##print("<><><><><><><><><><><><>")
-                #self.placing_stone(coord, self.stone)
-                #self.update_board(self.stone)
                 self.stone *= -1
 
