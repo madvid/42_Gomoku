@@ -54,7 +54,9 @@ class GameUI(MyWindow):
         super(GameUI, self).__init__()
         # Board creation, common for mywindow object and the Solver object
         self.grid = np.zeros((5,5), dtype=np.int8)
-        
+        self.W_whitestones = []
+        self.W_blackstones = []
+
         # instance of Solver = generate the accessible moves from current node
         self.agent = Solver(depth=1)
         
@@ -221,7 +223,7 @@ class GameUI(MyWindow):
                 if self.grid[stone[1][0], stone[1][1]] == 0:
                     l_remove.append(ii)
             self.remove_stone(l_remove, "white")
-            
+
     def placing_stone(self, event, color):
         """Creates and move and display the widget corresponding to the new
             stone (white/black) according to the coordinates in event (when
@@ -233,29 +235,88 @@ class GameUI(MyWindow):
             event (QtGui.QMouseEvent / np.array): we are interessed by the coordinates
             color (int): 1 == white and -1 == black
         """
-        current_stone =  QLabel("", self.wdgts_UI3["board"])
-        current_stone.setStyleSheet("background-color: transparent;")
-        
-        if color == 1: #white
-            px_stone = QPixmap(assets["white_stone"])
-        else:
-            px_stone = QPixmap(assets["black_stone"])
-        px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-        current_stone.setPixmap(px_stone)
-        
         if isinstance(event, QtGui.QMouseEvent):
             nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-            coord = stone_to_board(nearest, self.stone, self.grid)
-        else:
-            nearest = nearest_coord(event)[::-1]
-            coord = (event - 26) / 31
-        if color == 1:
-            self.whitestone.append((current_stone, coord.astype('int8')))
-        else:
-            self.blackstone.append((current_stone, coord.astype('int8')))
+            print("NEAREST = ", nearest)
+            stone_to_board(nearest, self.stone, self.grid)
+                
+    #def placing_stone(self, event, color):
+    #    """Creates and move and display the widget corresponding to the new
+    #        stone (white/black) according to the coordinates in event (when
+    #        clicking or when the algorithm is playing).
+    #        The new stone is appended in the list of whitestone/blackstone
+    #        widgets representing all the existing stones on the board.
+    #    Args:
+    #    -----
+    #        event (QtGui.QMouseEvent / np.array): we are interessed by the coordinates
+    #        color (int): 1 == white and -1 == black
+    #    """
+    #    current_stone =  QLabel("", self.wdgts_UI3["board"])
+    #    current_stone.setStyleSheet("background-color: transparent;")
+    #    
+    #    if color == 1: #white
+    #        px_stone = QPixmap(assets["white_stone"])
+    #    else:
+    #        px_stone = QPixmap(assets["black_stone"])
+    #    px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+    #    current_stone.setPixmap(px_stone)
+    #    
+    #    if isinstance(event, QtGui.QMouseEvent):
+    #        nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
+    #        coord = stone_to_board(nearest, self.stone, self.grid)
+    #    else:
+    #        nearest = nearest_coord(event)[::-1]
+    #        coord = (event - 26) / 31
+    #    if color == 1:
+    #        self.whitestone.append((current_stone, coord.astype('int8')))
+    #    else:
+    #        self.blackstone.append((current_stone, coord.astype('int8')))
+    #    
+    #    current_stone.move(nearest[0] - 26, nearest[1] - 26)
+    #    current_stone.show()
+
+
+    def UiGenBoard(self):
+        """
+        """
+        blackstones = np.argwhere(self.grid == -1)
+        whitestones = np.argwhere(self.grid == 1)
         
-        current_stone.move(nearest[0] - 26, nearest[1] - 26)
-        current_stone.show()
+        for coord in blackstones:
+            stone = QLabel("", self.wdgts_UI3["board"])
+            stone.setStyleSheet("background-color: transparent;")
+            px_stone = QPixmap(assets["black_stone"]).scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+            stone.setPixmap(px_stone)
+            self.W_whitestones.append((stone, coord))
+
+        for coord in whitestones:
+            stone = QLabel("", self.wdgts_UI3["board"])
+            stone.setStyleSheet("background-color: transparent;")
+            px_stone = QPixmap(assets["white_stone"]).scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+            stone.setPixmap(px_stone)
+            self.W_whitestones.append((stone, coord))
+
+        for wstone in self.W_whitestones:
+            xy = (31 * wstone[1][::-1] + 7).astype('int8')
+            print("XY = ", xy)
+            wstone[0].move(xy[0], xy[1])
+            wstone[0].show()
+        for wstone in self.W_blackstones:
+            xy = (31 * wstone[1][::-1] + 7).astype('int8')
+            print("XY = ", xy)
+            wstone[0].move(xy[0], xy[1])
+            wstone[0].show()
+
+    def UiDestroyBoard(self):
+        """
+        """
+        for ii in range(0, len(self.W_whitestones), -1):
+            self.W_whitestones[ii][0].deleteLater()
+            del(self.W_whitestones[ii])
+        
+        for ii in range(0, len(self.W_blackstones), -1):
+            self.W_blackstones[ii][0].deleteLater()
+            del(self.W_blackstones[ii])
 
 
     def mousePressEvent(self, event):
@@ -279,11 +340,17 @@ class GameUI(MyWindow):
                 self.grid = np.zeros((19,19))
             
             self.placing_stone(event, self.stone)
-            #print("[Player]<Before CHECK:>\n", self.grid)
-            self.check_board()
-            self.update_board(self.stone)
-            #print("[Player]<After CHECK>\n", self.grid)
-            #print("<><><><><><><><><><><><>")
+            self.UiDestroyBoard()
+            self.UiGenBoard()
+            print("<><><> GRID Player  <><><>")
+            print(self.grid)
+            print("<><><> <><><><><><> <><><>")
+            #self.placing_stone(event, self.stone)
+            ##print("[Player]<Before CHECK:>\n", self.grid)
+            #self.check_board()
+            #self.update_board(self.stone)
+            ##print("[Player]<After CHECK>\n", self.grid)
+            ##print("<><><><><><><><><><><><>")
 
             self.node = Node(self.node, self.grid, color=-self.stone)
             self.history.add_nodes([self.node])
@@ -294,11 +361,16 @@ class GameUI(MyWindow):
             prev_grid = self.grid
             self.grid = self.node.grid
             dgrid = prev_grid - self.grid
-            coord = 31 * (np.argwhere(dgrid != 0)[0]) + 26
-            
-            #print(f"[AGENT]< {np.argwhere(dgrid != 0)[0]} -> {coord}  >\n", self.grid)
-            #print("<><><><><><><><><><><><>")
-            self.placing_stone(coord, self.stone)
-            self.update_board(self.stone)
+            #coord = 31 * (np.argwhere(dgrid != 0)[0]) + 26
+
+            self.UiDestroyBoard()
+            self.UiGenBoard()
+            print("<><><>  GRID Agent  <><><>")
+            print(self.grid)
+            print("<><><> <><><><><><> <><><>")
+            ##print(f"[AGENT]< {np.argwhere(dgrid != 0)[0]} -> {coord}  >\n", self.grid)
+            ##print("<><><><><><><><><><><><>")
+            #self.placing_stone(coord, self.stone)
+            #self.update_board(self.stone)
             self.stone *= -1
 
