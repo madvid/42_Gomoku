@@ -1,5 +1,4 @@
 from __future__ import annotations
-from scipy import signal
 from typing import List, Tuple
 import numpy as np
 from numba import njit

@@ -1,9 +1,9 @@
 from __future__ import annotations
 import numpy as np
-# from game.board import *
-# from game.metrics import *
-from board import Node
 from typing import Tuple
+
+from game.board import *
+from game.metrics import *
 
 class Solver():
     def __init__(self, depth: int) -> None:
@@ -113,8 +113,9 @@ class Solver():
         # next_moves = [(self.negamax_ab(n, self.depth, current_state.color * -1, float('-inf'), float('inf'), current_state.color * -1), n ) for n in current_state.generate_next_moves(current_state.color)]
         next_moves = [(self.minimax_ab_tt(n, self.depth, current_state.color == -1, float('-inf'), float('inf'), current_state.color * -1), n ) for n in current_state.generate_next_moves(current_state.color)]
         
-        if current_state.color == 1:
-            return max(next_moves, key= lambda x: x[0])[1]
-        else:
-            return min(next_moves, key= lambda x: x[0])[1]
+        if len(next_moves) != 0:
+            if current_state.color == 1:
+                return max(next_moves, key= lambda x: x[0])[1]
+            else:
+                return min(next_moves, key= lambda x: x[0])[1]
 
