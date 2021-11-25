@@ -297,26 +297,26 @@ class GameUI(MyWindow):
             self.W_whitestones.append((stone, coord))
 
         for wstone in self.W_whitestones:
-            xy = (31 * wstone[1][::-1] + 7).astype('int8')
-            print("XY = ", xy)
+            xy = (31 * wstone[1][::-1] + 6).astype('int32')
             wstone[0].move(xy[0], xy[1])
             wstone[0].show()
         for wstone in self.W_blackstones:
-            xy = (31 * wstone[1][::-1] + 7).astype('int8')
-            print("XY = ", xy)
+            xy = (31 * wstone[1][::-1] + 6).astype('int32')
             wstone[0].move(xy[0], xy[1])
             wstone[0].show()
 
     def UiDestroyBoard(self):
         """
         """
-        for ii in range(0, len(self.W_whitestones), -1):
+        for ii in range(0, len(self.W_whitestones)):
             self.W_whitestones[ii][0].deleteLater()
-            del(self.W_whitestones[ii])
+        del(self.W_whitestones)
+        self.W_whitestones = []
         
         for ii in range(0, len(self.W_blackstones), -1):
             self.W_blackstones[ii][0].deleteLater()
-            del(self.W_blackstones[ii])
+        del(self.W_blackstones)
+        self.W_blackstones = []
 
 
     def mousePressEvent(self, event):
