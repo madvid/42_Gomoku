@@ -127,7 +127,7 @@ coords = np.array(np.meshgrid(nodes_x, nodes_y)).T.reshape(-1,2)
 # ___________________________    |FUNCTIONS|     ____________________________ #
 # =========================================================================== #
 
-def nearest_coord(point:npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
+def nearest_coord(point:np.array) -> np.array:
 	ii = point[0] // 31
 	jj = point[1] // 31
 	if fabs(point[0] - ii * 31) >  fabs(point[0] - (ii + 1) * 31):
