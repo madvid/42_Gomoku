@@ -86,9 +86,6 @@ class History():
     def add_nodes(self, l_node:List[Node]):
         for n in l_node:
             self.lst_nodes.append(n.grid)
-            print("<><><><>   GRID   <><><><>")
-            print(n.grid)
-            print("<><><> <><><><><><> <><><>")
             #bc = self.node2boardconfig(n)
             #self.lst_nodes.append(bc)
             self.i_current += 1

@@ -16,10 +16,14 @@ from typing import Tuple
 # =========================================================================== #
 # ___________________________    |CONSTANTES|    ____________________________ #
 # =========================================================================== #
+BLACK = 1
+WHITE = -1
+
 W_WIDTH = 1080
 W_HEIGHT = 720
 MAIN_BTN_WIDTH = int(0.15 * W_WIDTH)
 MAIN_BTN_HEIGHT = int(0.8 * W_HEIGHT)
+
 WIDGETS_WH = {"stack1_logo": [int(W_WIDTH), int(0.4 * W_HEIGHT)],
 			  "button pvp": [int(0.8 * W_WIDTH), int(0.15 * W_HEIGHT)],
 			  "button pva": [int(0.8 * W_WIDTH), int(0.15 * W_HEIGHT)],
@@ -59,7 +63,7 @@ assets = {"button back": "assets/BACK.png",
           "img_gomoku": "assets/Gomoku.png",
           "img_player1": "assets/Player1.png",
           "img_player2": "assets/Player2.png",
-          "img_score": "assets/Score.png",
+          "img_score": "assets/Pairs.png",
           "chr_Elon": "assets/pixel_elon.png",
           "chr_Feynman": "assets/pixel_feynman.png",
           "chr_Lee_Sedol": "assets/pixel_lee_sedol.png",
@@ -157,7 +161,7 @@ class MyWindow(QWidget):
 		self.setStyleSheet("background: #152338;")
 
 		# Widgets which matter for the update of the board (np.array)
-		self.stone = 1 # 1 is white and -1 is black
+		self.stone = WHITE # 1 is white and -1 is black
 		self.W_whitestones = []
 		self.W_blackstones = []
 
@@ -279,6 +283,7 @@ class MyWindow(QWidget):
 		self.wdgts_UI2["button back"].clicked.connect(self.game_back)
 
 		self.stack2.setLayout(grid)
+
 
 	def stack3UI(self):
 		# -------- GAME FRAME -------- #
@@ -403,6 +408,10 @@ class MyWindow(QWidget):
 
 
 	def game_forward(self):
+		pass
+
+
+	def game_score(self):
 		pass
 
 
@@ -531,7 +540,7 @@ class MyWindow(QWidget):
 			current_stone =  QLabel("", self.wdgts_UI3["board"])
 			current_stone.setStyleSheet("background-color: transparent;")
 			# Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
-			if self.stone == 1:
+			if self.stone == WHITE:
 				px_stone = QPixmap(assets["stone_white"])
 				px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
 				current_stone.setPixmap(px_stone)
