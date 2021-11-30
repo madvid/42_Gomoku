@@ -34,25 +34,45 @@ dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
                  "margin: 0px 0px;}" +
                  "*:hover{background: '#FF6666';}"}
 
-k_diags = np.array([0.25 * np.array([[BLACK, 0,     0,     0],
-                                     [0,     WHITE, 0,     0],
-                                     [0,     0,     WHITE, 0],
-                                     [0,     0,     0,     BLACK]]),
-                    0.25 * np.array([[0,     0,     0,     BLACK],
-                                     [0,     0,     WHITE, 0],
-                                     [0,     WHITE, 0,     0],
-                                     [BLACK, 0,     0,     0]])])
+k_diags = np.array([np.array([[BLACK, 0,     0,     0],
+                              [0,     WHITE, 0,     0],
+                              [0,     0,     WHITE, 0],
+                              [0,     0,     0,     BLACK]]),
+                    np.array([[0,     0,     0,     BLACK],
+                              [0,     0,     WHITE, 0],
+                              [0,     WHITE, 0,     0],
+                              [BLACK, 0,     0,     0]])])
 
-k_lines = [0.25 * np.array([[BLACK, WHITE, WHITE, BLACK]]),
-           0.25 * np.array([[BLACK],
-                            [WHITE],
-                            [WHITE],
-                            [BLACK]])]
+k_lines = [np.array([[BLACK, WHITE, WHITE, BLACK]]),
+           np.array([[BLACK],
+                     [WHITE],
+                     [WHITE],
+                     [BLACK]])]
+
+k_capture_l = np.array([[BLACK],[WHITE],[0],[BLACK]])
+k_capture_d = np.array([[BLACK, 0,     0, 0],
+                        [0,     WHITE, 0, 0],
+                        [0,     0,     0, 0],
+                        [0,     0,     0, BLACK]])
+
+k_captures = [k_capture_l, np.rot90(k_capture_l), np.rot90(k_capture_l, k=2), np.rot90(k_capture_l, k=3),
+              -k_capture_l, np.rot90(-k_capture_l), -np.rot90(k_capture_l, k=2), -np.rot90(k_capture_l, k=3),
+              k_capture_d, np.rot90(k_capture_d), np.rot90(k_capture_d, k=2), np.rot90(k_capture_d, k=3),
+              -k_capture_d, np.rot90(-k_capture_d), -np.rot90(k_capture_d, k=2), -np.rot90(k_capture_d, k=3)]
+
+k_freethree_l = np.array([[1, 2, 2, 2, 2, 1]])
+k_freethree_d = np.array([[1, 0, 0, 0, 0, 0],
+                          [0, 2, 0, 0, 0, 0],
+                          [0, 0, 2, 0, 0, 0],
+                          [0, 0, 0, 2, 0, 0],
+                          [0, 0, 0, 0, 2, 0],
+                          [0, 0, 0, 0, 0, 1]])
+k_free_threes = [k_freethree_l, np.rot90(k_freethree_l), k_freethree_d, np.rot90(k_freethree_d)]
+
 
 # =========================================================================== #
 #                          | fonctions definition |                           #
 # =========================================================================== #
-
 
 
 # =========================================================================== #
@@ -109,8 +129,8 @@ class GameUI(MyWindow):
         self.wdgts_UI3["score p2"].setPixmap(QPixmap(assets[f"img_{self.p2_score}"]))
         
 
-
-    def _subboard_4_Conv2D(self, k_shape:tuple, stride:tuple) -> np.array:
+    @staticmethod
+    def _subboard_4_Conv2D(grid, k_shape:tuple, stride:tuple) -> np.array:
         """ Generates the sub view of the grid to be multiply with the kernel.
         First the shape of the sub_grid array is calculated, it depends on
         the grid shape and the kernel shape.
@@ -125,12 +145,13 @@ class GameUI(MyWindow):
             k_shape ([tuple[int]]): shape of the kernel
             stride ([tuple(int)]): put self.grid.strides * 2 (but why?)
         """
-        view_shape = tuple(np.subtract(self.grid.shape, k_shape) + 1) + k_shape
-        sub_grid = as_strided(self.grid, view_shape, stride * 2)
+        view_shape = tuple(np.subtract(grid.shape, k_shape) + 1) + k_shape
+        sub_grid = as_strided(grid, view_shape, stride * 2)
         return sub_grid
 
 
-    def _my_conv2D(self, kernel:np.array) -> np.array:
+    @staticmethod
+    def _my_conv2D(grid, kernel:np.array) -> np.array:
         """ Retrieves the sub_grid from the function _subboard_4_Conv2D and performs
         the convolution (array multiplication + einstein sum along the 3rd and 4th
         dimensions).
@@ -138,7 +159,7 @@ class GameUI(MyWindow):
         -----
             * kernel ([np.array]): the kernel to use for convolution.
         """
-        sub_grid = self._subboard_4_Conv2D(k_shape=kernel.shape, stride=self.grid.strides)
+        sub_grid = GameUI._subboard_4_Conv2D(grid, k_shape=kernel.shape, stride=grid.strides)
         res_conv = np.multiply(sub_grid, kernel)
         convolved = np.einsum('ijkl->ij', res_conv)
         return convolved
@@ -149,16 +170,16 @@ class GameUI(MyWindow):
         """
         ## Checking if white pair captured
         # Checking the diagonal:
-        conv_diag1 = self._my_conv2D(k_diags[0])
-        conv_diag2 = self._my_conv2D(k_diags[1])
+        conv_diag1 = GameUI._my_conv2D(k_diags[0])
+        conv_diag2 = GameUI._my_conv2D(k_diags[1])
         # Checking vertical and horizontal
-        conv_lin1 = self._my_conv2D(k_lines[0])
-        conv_lin2 = self._my_conv2D(k_lines[1])
+        conv_lin1 = GameUI._my_conv2D(k_lines[0])
+        conv_lin2 = GameUI._my_conv2D(k_lines[1])
         
-        coord_cd1 = np.argwhere(conv_diag1 == 1)
-        coord_cd2 = np.argwhere(conv_diag2 == 1)
-        coord_cl1 = np.argwhere(conv_lin1 == 1)
-        coord_cl2 = np.argwhere(conv_lin2 == 1)
+        coord_cd1 = np.argwhere(conv_diag1 == 4)
+        coord_cd2 = np.argwhere(conv_diag2 == 4)
+        coord_cl1 = np.argwhere(conv_lin1 == 4)
+        coord_cl2 = np.argwhere(conv_lin2 == 4)
         #print("||||||||||||||||||||||||||||")
         #print("conv_diag1:\n", conv_diag1)
         #print("conv_diag2:\n", conv_diag2)
@@ -184,11 +205,11 @@ class GameUI(MyWindow):
                 self.grid[coord[0] + 2][coord[1]] = 0
         ## Checking if black pair captured
         # Checking the diagonal:
-        conv_diag1 = self._my_conv2D(-1 * k_diags[0])
-        conv_diag2 = self._my_conv2D(-1 * k_diags[1])
+        conv_diag1 = GameUI._my_conv2D(-1 * k_diags[0])
+        conv_diag2 = GameUI._my_conv2D(-1 * k_diags[1])
         # Checking vertical and horizontal
-        conv_lin1 = self._my_conv2D(-1 * k_lines[0])
-        conv_lin2 = self._my_conv2D(-1 * k_lines[1])
+        conv_lin1 = GameUI._my_conv2D(-1 * k_lines[0])
+        conv_lin2 = GameUI._my_conv2D(-1 * k_lines[1])
 
         #print("|||||||||||||||||||||||||||||")
         #print("conv_diag1:\n", conv_diag1)
@@ -197,10 +218,10 @@ class GameUI(MyWindow):
         #print("conv_lin2:\n", conv_lin2)
         #print("|||||||||||||||||||||||||||||")
         
-        coord_cd1 = np.argwhere(conv_diag1 == 1)
-        coord_cd2 = np.argwhere(conv_diag2 == 1)
-        coord_cl1 = np.argwhere(conv_lin1 == 1)
-        coord_cl2 = np.argwhere(conv_lin2 == 1)
+        coord_cd1 = np.argwhere(conv_diag1 == 4)
+        coord_cd2 = np.argwhere(conv_diag2 == 4)
+        coord_cl1 = np.argwhere(conv_lin1 == 4)
+        coord_cl2 = np.argwhere(conv_lin2 == 4)
         if coord_cd1.shape[0] != 0:
             for coord in coord_cd1:
                 self.grid[coord[0] + 1][coord[1] + 1] = 0
@@ -229,6 +250,8 @@ class GameUI(MyWindow):
         --------
             (bool): boolean traducing if position is available.
         """
+        extend_grid = np.zeros((23,23))
+        extend_grid[2:-2][2:-2] = self.grid
         def isbusy(xy, grid) -> bool:
             """[summary]
 
@@ -253,11 +276,39 @@ class GameUI(MyWindow):
             Returns:
                 bool: [description]
             """
-            if condition:
+            r_start, r_end = yx[0] - 2, yx[0] + 2
+            c_start, c_end = yx[1] - 2, yx[1] + 2
+            res = [GameUI._my_conv2D(grid[r_start:r_end][c_start:c_end], kernel) for kernel in k_captures]
+
+            if any([np.any(arr == 3) for arr in res]):
+                return True
+            return False
+
+        def issimplefreethree_position(yx, grid):
+            """[summary]
+
+            Args:
+                yx ([type]): [description]
+                grid ([type]): [description]
+
+            Returns:
+                ___: [description]
+            """
+            tmp = np.zeros((27,27))
+            tmp[4:-4, 4:-4] = grid + 1 
+            # Verifier si c'est la bonne fenetre, centrée sur la position ou la stone
+            # va etre placé !!!
+            #r_start, r_end = yx[0] - 4, yx[0] + 4
+            #c_start, c_end = yx[1] - 4, yx[1] + 4
+            r_start, r_end = yx[0], yx[0] + 8
+            c_start, c_end = yx[1], yx[1] + 8
+            res = [GameUI._my_conv2D(grid[r_start:r_end, c_start:c_end], kernel) for kernel in k_free_threes]
+            
+            if any([np.any(arr == 15) for arr in res]):
                 return True
             return False
             
-        def isdoublethreetree_position(yx, grid) -> bool:
+        def isdoublefreethree_position(yx, grid) -> bool:
             """[summary]
 
             Args:
@@ -275,9 +326,9 @@ class GameUI(MyWindow):
         if isbusy(nearest[::-1] // 31 - 1, self.grid):
             print("position is not available.")
             return False
-        if iscapture_position(nearest[::-1] // 31 - 1, self.grid):
+        if iscapture_position(nearest[::-1] // 31 - 1, extend_grid):
             return False
-        if isdoublethreetree_position(nearest[::-1] // 31 - 1, self.grid):
+        if isdoublefreethree_position(nearest[::-1] // 31 - 1, extend_grid):
             return False
         return True
         
