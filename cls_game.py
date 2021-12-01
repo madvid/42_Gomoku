@@ -9,7 +9,7 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QCursor
 
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
@@ -284,7 +284,7 @@ class GameUI(MyWindow):
                 return True
             return False
 
-        def issimplefreethree_position(yx, grid):
+        def issimplefreethree_position(yx:List[int], grid:np.array):
             """[summary]
 
             Args:
@@ -296,19 +296,15 @@ class GameUI(MyWindow):
             """
             tmp = np.zeros((27,27))
             tmp[4:-4, 4:-4] = grid + 1 
-            # Verifier si c'est la bonne fenetre, centrée sur la position ou la stone
-            # va etre placé !!!
-            #r_start, r_end = yx[0] - 4, yx[0] + 4
-            #c_start, c_end = yx[1] - 4, yx[1] + 4
-            r_start, r_end = yx[0], yx[0] + 8
-            c_start, c_end = yx[1], yx[1] + 8
+            r_start, r_end = yx[0], yx[0] + 9
+            c_start, c_end = yx[1], yx[1] + 9
             res = [GameUI._my_conv2D(grid[r_start:r_end, c_start:c_end], kernel) for kernel in k_free_threes]
             
-            if any([np.any(arr == 15) for arr in res]):
+            if any([np.any(arr == 16) for arr in res]):
                 return True
             return False
             
-        def isdoublefreethree_position(yx, grid) -> bool:
+        def isdoublefreethree_position(yx:List[int], grid:np.array) -> bool:
             """[summary]
 
             Args:
@@ -318,8 +314,18 @@ class GameUI(MyWindow):
             Returns:
                 bool: [description]
             """
-            if condition:
-                return True
+            tmp = np.zeros((18,18))
+            tmp[4:-4, 4:-4] = grid + 1 
+            r_start, r_end = yx[0], yx[0] + 9
+            c_start, c_end = yx[1], yx[1] + 9
+            tmp[yx[0] + 4, yx[1] + 4] = 2
+            res = [GameUI._my_conv2D(tmp[r_start:r_end, c_start:c_end], kernel) for kernel in k_free_threes]
+            positions = (np.argwhere(arr >= 16) for arr in res)
+            positions = [pos for pos in positions if pos.shape[0] != 0]
+            if len(positions) > 0:
+                coords = np.vstack(positions)
+                if coords.shape[0] > 2:
+                    return True
             return False
         
         nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
