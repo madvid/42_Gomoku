@@ -9,7 +9,7 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QCursor
 
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
