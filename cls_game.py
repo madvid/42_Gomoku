@@ -250,8 +250,7 @@ class GameUI(MyWindow):
         --------
             (bool): boolean traducing if position is available.
         """
-        extend_grid = np.zeros((23,23))
-        extend_grid[2:-2][2:-2] = self.grid
+
         def isbusy(xy, grid) -> bool:
             """[summary]
 
@@ -266,7 +265,7 @@ class GameUI(MyWindow):
                 return True
             return False
             
-        def iscapture_position(yx, grid) -> bool:
+        def iscapture_position(yx, grid, color) -> bool:
             """[summary]
 
             Args:
@@ -276,15 +275,64 @@ class GameUI(MyWindow):
             Returns:
                 bool: [description]
             """
-            r_start, r_end = yx[0] - 2, yx[0] + 2
-            c_start, c_end = yx[1] - 2, yx[1] + 2
-            res = [GameUI._my_conv2D(grid[r_start:r_end][c_start:c_end], kernel) for kernel in k_captures]
+            k_cap_line = np.array([color, -color, -color, color])
+            k_cap_diag = np.array([[color, 0,     0,     0],
+                                   [0,    -color, 0,     0],
+                                   [0,     0,    -color, 0],
+                                   [0,     0,     0,     color]])
+            extend_grid = np.zeros((25,25))
+            extend_grid[3:-3, 3:-3] = grid
+            extend_grid[yx[0] + 3, yx[1], +3] = color
+            r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 3 + 1,yx[1]], k_cap_line))
+            r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 2 * 3 + 1, yx[1]], k_cap_line))
+            r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0], yx[1]:yx[1] + 3 + 1], k_cap_line))
+            r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0], yx[1] + 3:yx[1] + 2 * 3 + 1], k_cap_line))
 
-            if any([np.any(arr == 3) for arr in res]):
+            r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 3 + 1, yx[1]:yx[1] + 3 + 1], k_cap_diag))
+            r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 3 + 1, yx[1] + 3:yx[1] + 2 * 3  + 1], np.rot90(k_cap_diag)))
+            r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 2 * 3 + 1, yx[1]:yx[1] + 3 + 1], k_cap_diag))
+            r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 2 * 3 + 1, yx[1] + 3:yx[1] + 2 * 3 + 1], np.rot90(k_cap_diag)))
+            res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
+            if any([np.any(arr == 4) for arr in res]):
                 return True
             return False
 
-        def issimplefreethree_position(yx, grid):
+        #def issimplefreethree_position(yx, grid):
+        #    """[summary]
+        #
+        #    Args:
+        #        yx ([type]): [description]
+        #        grid ([type]): [description]
+        #
+        #    Returns:
+        #        ___: [description]
+        #    """
+        #    tmp = np.zeros((27,27))
+        #    tmp[yx[0] + 4, yx[1] + 4] = 1
+        #    tmp[4:-4, 4:-4] += grid + 1
+        #
+        #    # Convolution sur la ligne 
+        #    view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
+        #    res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes[0])) for i in range(4)]
+        #    
+        #    #Convolution sur la colonne:
+        #    view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
+        #    res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes[1].flatten())) for i in range(4)]
+        #    
+        #    # Convolution sur diagonale descendante gauche-droite
+        #    view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+        #    res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes[2])) for i in range(4)]
+        #    
+        #    # Convolution sur diagonale montante gauche-droite
+        #    view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+        #    res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes[3])) for i in range(4)]
+        #
+        #    if any([np.any(arr >= 16) for arr in [*res_l, *res_c, *res_d1, *res_d2]]):
+        #        return True
+        #    return False
+
+            
+        def isdoublefreethree_position(yx, grid, color) -> bool:
             """[summary]
 
             Args:
@@ -292,45 +340,52 @@ class GameUI(MyWindow):
                 grid ([type]): [description]
 
             Returns:
-                ___: [description]
+                bool: [description]
             """
             tmp = np.zeros((27,27))
-            tmp[4:-4, 4:-4] = grid + 1 
-            # Verifier si c'est la bonne fenetre, centrée sur la position ou la stone
-            # va etre placé !!!
-            #r_start, r_end = yx[0] - 4, yx[0] + 4
-            #c_start, c_end = yx[1] - 4, yx[1] + 4
-            r_start, r_end = yx[0], yx[0] + 8
-            c_start, c_end = yx[1], yx[1] + 8
-            res = [GameUI._my_conv2D(grid[r_start:r_end, c_start:c_end], kernel) for kernel in k_free_threes]
+            tmp[yx[0] + 4, yx[1] + 4] = color
+            tmp[4:-4, 4:-4] += color * grid + 1
+    
+            # Convolution sur la ligne 
+            view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
+            res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes[0])) for i in range(4)]
             
-            if any([np.any(arr == 15) for arr in res]):
+            #Convolution sur la colonne:
+            view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
+            res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes[1].flatten())) for i in range(4)]
+            
+            # Convolution sur diagonale descendante gauche-droite
+            view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+            res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes[2])) for i in range(4)]
+            
+            # Convolution sur diagonale montante gauche-droite
+            view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+            res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes[3])) for i in range(4)]
+
+            free_threes = 0
+            if any([np.any(arr >= 16) for arr in res_l]):
+                free_threes += 1
+            if any([np.any(arr >= 16) for arr in res_c]):
+                free_threes += 1
+            if any([np.any(arr >= 16) for arr in res_d1]):
+                free_threes += 1
+            if any([np.any(arr >= 16) for arr in res_d2]):
+                free_threes += 1
+
+            if free_threes > 1:
                 return True
             return False
-            
-        def isdoublefreethree_position(yx, grid) -> bool:
-            """[summary]
 
-            Args:
-                yx ([type]): [description]
-                grid ([type]): [description]
-
-            Returns:
-                bool: [description]
-            """
-            if condition:
-                return True
-            return False
-        
         nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
         if isbusy(nearest[::-1] // 31 - 1, self.grid):
             print("position is not available.")
             return False
-        if iscapture_position(nearest[::-1] // 31 - 1, extend_grid):
+        if iscapture_position(nearest[::-1] // 31 - 1, self.grid, self.color):
             return False
-        if isdoublefreethree_position(nearest[::-1] // 31 - 1, extend_grid):
+        if isdoublefreethree_position(nearest[::-1] // 31 - 1, self.grid, self.color):
             return False
         return True
+        
         
 
     def placing_stone(self, event, color):
