@@ -22,7 +22,7 @@ from game.history import History
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
-
+TOT = 0
 BLACK = 1
 WHITE = -1
 
@@ -69,10 +69,26 @@ k_freethree_d = np.array([[1, 0, 0, 0, 0, 0],
                           [0, 0, 0, 0, 0, 1]])
 k_free_threes = [k_freethree_l, np.rot90(k_freethree_l), k_freethree_d, np.rot90(k_freethree_d)]
 
+SIZE = 6
+
 
 # =========================================================================== #
 #                          | fonctions definition |                           #
 # =========================================================================== #
+
+def current_coordinates(pos:QtCore.QPoint) -> np.array:
+    """Returns the index on the grid corresponding to the cursor position.
+    Args:
+    -----
+        pos (QtGui.QMouseEvent): coordinates of the mouse cursor.
+
+    Returns:
+    --------
+        np.array: indexes (# of line and # of the column).
+    """
+    nearest = nearest_coord(np.array([pos.x(), pos.y()]))
+    coord = np.array([(nearest[1] // 31) - 1, (nearest[0] // 31) - 1])
+    return coord
 
 
 # =========================================================================== #
@@ -82,7 +98,7 @@ class GameUI(MyWindow):
     def __init__(self, gmode:int):
         super(GameUI, self).__init__()
         # Board creation and player related attributes
-        self.grid = np.zeros((6,6), dtype=np.int8)
+        self.grid = np.zeros((SIZE,SIZE), dtype=np.int8)
         self.W_whitestones = []
         self.W_blackstones = []
         self.coord_whitestones = []
@@ -111,6 +127,7 @@ class GameUI(MyWindow):
             self.UiDestroyBoard()
             self.UiGenBoard()
 
+
     def game_forward(self):
         """[summary]
         """
@@ -119,6 +136,7 @@ class GameUI(MyWindow):
             self.grid = self.history.lst_nodes[self.history.i_current]
             self.UiDestroyBoard()
             self.UiGenBoard()
+
 
     def game_score(self, scores: Tuple[int]):
         """[summary]
@@ -170,11 +188,11 @@ class GameUI(MyWindow):
         """
         ## Checking if white pair captured
         # Checking the diagonal:
-        conv_diag1 = GameUI._my_conv2D(k_diags[0])
-        conv_diag2 = GameUI._my_conv2D(k_diags[1])
+        conv_diag1 = GameUI._my_conv2D(self.grid, k_diags[0])
+        conv_diag2 = GameUI._my_conv2D(self.grid, k_diags[1])
         # Checking vertical and horizontal
-        conv_lin1 = GameUI._my_conv2D(k_lines[0])
-        conv_lin2 = GameUI._my_conv2D(k_lines[1])
+        conv_lin1 = GameUI._my_conv2D(self.grid, k_lines[0])
+        conv_lin2 = GameUI._my_conv2D(self.grid, k_lines[1])
         
         coord_cd1 = np.argwhere(conv_diag1 == 4)
         coord_cd2 = np.argwhere(conv_diag2 == 4)
@@ -205,11 +223,11 @@ class GameUI(MyWindow):
                 self.grid[coord[0] + 2][coord[1]] = 0
         ## Checking if black pair captured
         # Checking the diagonal:
-        conv_diag1 = GameUI._my_conv2D(-1 * k_diags[0])
-        conv_diag2 = GameUI._my_conv2D(-1 * k_diags[1])
+        conv_diag1 = GameUI._my_conv2D(self.grid, -1 * k_diags[0])
+        conv_diag2 = GameUI._my_conv2D(self.grid, -1 * k_diags[1])
         # Checking vertical and horizontal
-        conv_lin1 = GameUI._my_conv2D(-1 * k_lines[0])
-        conv_lin2 = GameUI._my_conv2D(-1 * k_lines[1])
+        conv_lin1 = GameUI._my_conv2D(self.grid, -1 * k_lines[0])
+        conv_lin2 = GameUI._my_conv2D(self.grid, -1 * k_lines[1])
 
         #print("|||||||||||||||||||||||||||||")
         #print("conv_diag1:\n", conv_diag1)
@@ -239,8 +257,127 @@ class GameUI(MyWindow):
                 self.grid[coord[0] + 1][coord[1]] = 0
                 self.grid[coord[0] + 2][coord[1]] = 0
 
+    def remove_opponent_pair(self, idx:int):
+        yx = self.current_coord
+        #explicite coordinates of the stone to remove along each possible direction
+        # from the stone just played
+        stone_to_del = ((yx[0] + np.array([-2, -1]), yx[1] + np.array([0, 0])),
+                        (yx[0] + np.array([1, 2]), yx[1] + np.array([0, 0])),
+                        (yx[0] + np.array([0, 0]), yx[1] + np.array([-2, -1])),
+                        (yx[0] + np.array([0, 0]), yx[1] + np.array([1, 2])),
+                        (yx[0] + np.array([-2, -1]), yx[1] + np.array([-2, -1])),
+                        (yx[0] + np.array([-2, -1]), yx[1] + np.array([1, 2])),
+                        (yx[0] + np.array([1, 2]), yx[1] + np.array([-2, -1])),
+                        (yx[0] + np.array([1, 2]), yx[1] + np.array([1, 2])))
+        self.grid[stone_to_del[idx]] = 0
 
-    def isposition_available(self, event) -> bool:
+
+    def iscapture_position(self) -> bool:
+        """[summary]
+        Args:
+            yx ([type]): [description]
+            grid ([type]): [description]
+        Returns:
+            bool: [description]
+        """
+        global TOT
+        yx = self.current_coord
+        c = self.stone
+        k_cap_line = c * np.array([[1, -1, -1, 1]])
+        k_cap_diag = c * np.array([[1,  0,  0, 0],
+                                   [0, -1,  0, 0],
+                                   [0,  0, -1, 0],
+                                   [0,  0,  0, 1]])
+        extend_grid = np.zeros((SIZE + 6,SIZE + 6))
+        extend_grid[3:-3, 3:-3] = self.grid
+        extend_grid[yx[0] + 3, yx[1] + 3] = c
+        
+        print('>' * 5 + ' EXTENDED BOARD ')
+        print(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 4])
+        r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 4], np.rot90(k_cap_line)))
+        r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 4], np.rot90(k_cap_line)))
+        
+        r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1]:yx[1] + 4], k_cap_line))
+        r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1] + 3:yx[1] + 7], k_cap_line))
+        
+        r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1]:yx[1] + 4], k_cap_diag))
+        r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 7], np.rot90(k_cap_diag)))
+        r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1]:yx[1] + 4], k_cap_diag))
+        r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 7], np.rot90(k_cap_diag)))
+        res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
+        
+        print(f' =================== {TOT} =================== ')
+        TOT = TOT + 1
+        for ii, r_conv in enumerate(res):
+            print(f'({ii}) r_conv = {r_conv}')
+            if (r_conv == 4):
+                self.remove_opponent_pair(ii)
+        print('\n')        
+        if any([r == 4 for r in res]):
+            return True
+        return False
+
+
+    @staticmethod
+    def isbusy(xy, grid) -> bool:
+        """[summary]
+        Args:
+            yx ([type]): [description]
+            grid ([type]): [description]
+        Returns:
+            bool: [description]
+        """
+        if grid[xy[0]][xy[1]] != 0:
+            return True
+        return False
+
+            
+    @staticmethod
+    def isdoublefreethree_position(yx, grid, color) -> bool:
+        """[summary]
+        Args:
+            yx ([type]): [description]
+            grid ([type]): [description]
+        Returns:
+            bool: [description]
+        Remarques:
+            Il est probable que la fonction ne détecte pas les bouble free tree
+            créés en plaçant des pièces aux extrémités des doubles free trees
+        """
+        tmp = np.zeros((SIZE + 8,SIZE + 8))
+        tmp[yx[0] + 4, yx[1] + 4] = color
+        tmp[4:-4, 4:-4] += color * grid + 1
+        
+        # Convolution sur la ligne 
+        view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
+        res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes[0])) for i in range(4)]
+        
+        #Convolution sur la colonne:
+        view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
+        res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes[1].flatten())) for i in range(4)]
+        
+        # Convolution sur diagonale descendante gauche-droite
+        view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+        res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes[2])) for i in range(4)]
+        
+        # Convolution sur diagonale montante gauche-droite
+        view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+        res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes[3])) for i in range(4)]
+        free_threes = 0
+        if any([np.any(arr >= 16) for arr in res_l]):
+            free_threes += 1
+        if any([np.any(arr >= 16) for arr in res_c]):
+            free_threes += 1
+        if any([np.any(arr >= 16) for arr in res_d1]):
+            free_threes += 1
+        if any([np.any(arr >= 16) for arr in res_d2]):
+            free_threes += 1
+        if free_threes > 1:
+            return True
+        return False
+
+
+    def isposition_available(self) -> bool:
         """Checks if the position for the stone the player wants
         to play is empty.
         Args:
@@ -250,142 +387,12 @@ class GameUI(MyWindow):
         --------
             (bool): boolean traducing if position is available.
         """
-
-        def isbusy(xy, grid) -> bool:
-            """[summary]
-
-            Args:
-                yx ([type]): [description]
-                grid ([type]): [description]
-
-            Returns:
-                bool: [description]
-            """
-            if grid[xy[0]][xy[1]] != 0:
-                return True
-            return False
-            
-        def iscapture_position(yx, grid, color) -> bool:
-            """[summary]
-
-            Args:
-                yx ([type]): [description]
-                grid ([type]): [description]
-
-            Returns:
-                bool: [description]
-            """
-            k_cap_line = np.array([color, -color, -color, color])
-            k_cap_diag = np.array([[color, 0,     0,     0],
-                                   [0,    -color, 0,     0],
-                                   [0,     0,    -color, 0],
-                                   [0,     0,     0,     color]])
-            extend_grid = np.zeros((25,25))
-            extend_grid[3:-3, 3:-3] = grid
-            extend_grid[yx[0] + 3, yx[1], +3] = color
-            r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 3 + 1,yx[1]], k_cap_line))
-            r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 2 * 3 + 1, yx[1]], k_cap_line))
-            r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0], yx[1]:yx[1] + 3 + 1], k_cap_line))
-            r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0], yx[1] + 3:yx[1] + 2 * 3 + 1], k_cap_line))
-
-            r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 3 + 1, yx[1]:yx[1] + 3 + 1], k_cap_diag))
-            r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 3 + 1, yx[1] + 3:yx[1] + 2 * 3  + 1], np.rot90(k_cap_diag)))
-            r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 2 * 3 + 1, yx[1]:yx[1] + 3 + 1], k_cap_diag))
-            r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 2 * 3 + 1, yx[1] + 3:yx[1] + 2 * 3 + 1], np.rot90(k_cap_diag)))
-            res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
-            if any([np.any(arr == 4) for arr in res]):
-                return True
-            return False
-
-        #def issimplefreethree_position(yx, grid):
-        #    """[summary]
-        #
-        #    Args:
-        #        yx ([type]): [description]
-        #        grid ([type]): [description]
-        #
-        #    Returns:
-        #        ___: [description]
-        #    """
-        #    tmp = np.zeros((27,27))
-        #    tmp[yx[0] + 4, yx[1] + 4] = 1
-        #    tmp[4:-4, 4:-4] += grid + 1
-        #
-        #    # Convolution sur la ligne 
-        #    view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
-        #    res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes[0])) for i in range(4)]
-        #    
-        #    #Convolution sur la colonne:
-        #    view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
-        #    res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes[1].flatten())) for i in range(4)]
-        #    
-        #    # Convolution sur diagonale descendante gauche-droite
-        #    view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-        #    res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes[2])) for i in range(4)]
-        #    
-        #    # Convolution sur diagonale montante gauche-droite
-        #    view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-        #    res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes[3])) for i in range(4)]
-        #
-        #    if any([np.any(arr >= 16) for arr in [*res_l, *res_c, *res_d1, *res_d2]]):
-        #        return True
-        #    return False
-
-            
-        def isdoublefreethree_position(yx, grid, color) -> bool:
-            """[summary]
-
-            Args:
-                yx ([type]): [description]
-                grid ([type]): [description]
-
-            Returns:
-                bool: [description]
-            """
-            tmp = np.zeros((27,27))
-            tmp[yx[0] + 4, yx[1] + 4] = color
-            tmp[4:-4, 4:-4] += color * grid + 1
-    
-            # Convolution sur la ligne 
-            view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
-            res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes[0])) for i in range(4)]
-            
-            #Convolution sur la colonne:
-            view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
-            res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes[1].flatten())) for i in range(4)]
-            
-            # Convolution sur diagonale descendante gauche-droite
-            view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-            res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes[2])) for i in range(4)]
-            
-            # Convolution sur diagonale montante gauche-droite
-            view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-            res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes[3])) for i in range(4)]
-
-            free_threes = 0
-            if any([np.any(arr >= 16) for arr in res_l]):
-                free_threes += 1
-            if any([np.any(arr >= 16) for arr in res_c]):
-                free_threes += 1
-            if any([np.any(arr >= 16) for arr in res_d1]):
-                free_threes += 1
-            if any([np.any(arr >= 16) for arr in res_d2]):
-                free_threes += 1
-
-            if free_threes > 1:
-                return True
-            return False
-
-        nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-        if isbusy(nearest[::-1] // 31 - 1, self.grid):
+        if self.isbusy(self.current_coord, self.grid):
             print("position is not available.")
             return False
-        if iscapture_position(nearest[::-1] // 31 - 1, self.grid, self.color):
-            return False
-        if isdoublefreethree_position(nearest[::-1] // 31 - 1, self.grid, self.color):
+        if self.isdoublefreethree_position(self.current_coord, self.grid, self.stone):
             return False
         return True
-        
         
 
     def placing_stone(self, event, color):
@@ -473,10 +480,12 @@ class GameUI(MyWindow):
                 and (event.buttons() == QtCore.Qt.LeftButton) \
                     and iscurrentstate(self.history):
             
-            if not self.isposition_available(event):
+            self.current_coord = current_coordinates(event.pos())
+            if not self.isposition_available():
                 return
             self.placing_stone(event, self.stone)
-            self.check_board()
+            self.iscapture_position()
+            #self.check_board()
             self.i_round += 1
             self.UiDestroyBoard()
             self.UiGenBoard()
