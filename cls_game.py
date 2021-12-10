@@ -22,9 +22,9 @@ from game.history import History
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
+from constants import WHITE, BLACK, k_diags, k_lines, k_captures, k_free_threes
+
 TOT = 0
-BLACK = 1
-WHITE = -1
 
 dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
                  "border-radius: 20px;" +
@@ -33,41 +33,6 @@ dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
                  "padding: 0px 0px;" +
                  "margin: 0px 0px;}" +
                  "*:hover{background: '#FF6666';}"}
-
-k_diags = np.array([np.array([[BLACK, 0,     0,     0],
-                              [0,     WHITE, 0,     0],
-                              [0,     0,     WHITE, 0],
-                              [0,     0,     0,     BLACK]]),
-                    np.array([[0,     0,     0,     BLACK],
-                              [0,     0,     WHITE, 0],
-                              [0,     WHITE, 0,     0],
-                              [BLACK, 0,     0,     0]])])
-
-k_lines = [np.array([[BLACK, WHITE, WHITE, BLACK]]),
-           np.array([[BLACK],
-                     [WHITE],
-                     [WHITE],
-                     [BLACK]])]
-
-k_capture_l = np.array([[BLACK],[WHITE],[0],[BLACK]])
-k_capture_d = np.array([[BLACK, 0,     0, 0],
-                        [0,     WHITE, 0, 0],
-                        [0,     0,     0, 0],
-                        [0,     0,     0, BLACK]])
-
-k_captures = [k_capture_l, np.rot90(k_capture_l), np.rot90(k_capture_l, k=2), np.rot90(k_capture_l, k=3),
-              -k_capture_l, np.rot90(-k_capture_l), -np.rot90(k_capture_l, k=2), -np.rot90(k_capture_l, k=3),
-              k_capture_d, np.rot90(k_capture_d), np.rot90(k_capture_d, k=2), np.rot90(k_capture_d, k=3),
-              -k_capture_d, np.rot90(-k_capture_d), -np.rot90(k_capture_d, k=2), -np.rot90(k_capture_d, k=3)]
-
-k_freethree_l = np.array([[1, 2, 2, 2, 2, 1]])
-k_freethree_d = np.array([[1, 0, 0, 0, 0, 0],
-                          [0, 2, 0, 0, 0, 0],
-                          [0, 0, 2, 0, 0, 0],
-                          [0, 0, 0, 2, 0, 0],
-                          [0, 0, 0, 0, 2, 0],
-                          [0, 0, 0, 0, 0, 1]])
-k_free_threes = [k_freethree_l, np.rot90(k_freethree_l), k_freethree_d, np.rot90(k_freethree_d)]
 
 SIZE = 6
 
@@ -340,9 +305,6 @@ class GameUI(MyWindow):
             grid ([type]): [description]
         Returns:
             bool: [description]
-        Remarques:
-            Il est probable que la fonction ne détecte pas les bouble free tree
-            créés en plaçant des pièces aux extrémités des doubles free trees
         """
         tmp = np.zeros((SIZE + 8,SIZE + 8))
         tmp[yx[0] + 4, yx[1] + 4] = color
