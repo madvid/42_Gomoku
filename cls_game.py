@@ -15,7 +15,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from interface.game_interface import MyWindow, nearest_coord, stone_to_board, assets
 from game.minimax import Solver
-from game.board import Node
+from game.board import Node, sum_kern3, sum_kern4
 from game.history import History
 
 
@@ -75,6 +75,7 @@ class GameUI(MyWindow):
         self.agent = Solver(depth=1)
         
         # Initialization of the tree.
+        Node.metric = {BLACK: sum_kern3, WHITE: sum_kern3}
         parent = Node(None, self.grid, BLACK)
         parent.nb_free_three = 0
         self.node = Node(parent, self.grid, color=-self.stone)
@@ -231,12 +232,12 @@ class GameUI(MyWindow):
                         (yx[0] + np.array([0, 0]), yx[1] + np.array([-2, -1])),
                         (yx[0] + np.array([0, 0]), yx[1] + np.array([1, 2])),
                         (yx[0] + np.array([-2, -1]), yx[1] + np.array([-2, -1])),
-                        (yx[0] + np.array([-2, -1]), yx[1] + np.array([1, 2])),
-                        (yx[0] + np.array([1, 2]), yx[1] + np.array([-2, -1])),
+                        (yx[0] + np.array([-2, -1]), yx[1] + np.array([2, 1])),
+                        (yx[0] + np.array([2, 1]), yx[1] + np.array([-2, -1])),
                         (yx[0] + np.array([1, 2]), yx[1] + np.array([1, 2])))
         self.grid[stone_to_del[idx]] = 0
 
-
+    
     def iscapture_position(self) -> bool:
         """[summary]
         Args:
@@ -261,17 +262,14 @@ class GameUI(MyWindow):
         
         r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1]:yx[1] + 4], c * k_captures['diag1']))
         r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 7], c * k_captures['diag2']))
-        r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1]:yx[1] + 4], c * k_captures['diag1']))
-        r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 7], c * k_captures['diag2']))
+        r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1]:yx[1] + 4], c * k_captures['diag2']))
+        r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 7], c * k_captures['diag1']))
         res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
         
-        print(f' =================== {TOT} =================== ')
         TOT = TOT + 1
         for ii, r_conv in enumerate(res):
-            print(f'({ii}) r_conv = {r_conv}')
             if (r_conv == 4):
                 self.remove_opponent_pair(ii)
-        print('\n')        
         if any([r == 4 for r in res]):
             return True
         return False
@@ -300,37 +298,60 @@ class GameUI(MyWindow):
         Returns:
             bool: [description]
         """
-        tmp = np.zeros((SIZE + 8,SIZE + 8))
-        tmp[yx[0] + 4, yx[1] + 4] = color
-        tmp[4:-4, 4:-4] += color * grid + 1
+        pad_width = 8
+        c = color
+        extend_grid = np.pad(grid, pad_width, "constant", constant_values = (0))
         
-        # Convolution sur la ligne 
-        view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
-        res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes[0])) for i in range(4)]
+        extend_grid[yx[0] + pad_width, yx[1] + pad_width] = color
         
-        #Convolution sur la colonne:
-        view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
-        res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes[1].flatten())) for i in range(4)]
+        #r_conv_c = _my_conv2D(extend_grid)
+        #r_conv_l = _my_conv2D(extend_grid)
+        #
+        #r_conv_d1 = _my_conv2D(extend_grid)
+        #r_conv_d2 = _my_conv2D(extend_grid)
         
-        # Convolution sur diagonale descendante gauche-droite
-        view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-        res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes[2])) for i in range(4)]
-        
-        # Convolution sur diagonale montante gauche-droite
-        view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-        res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes[3])) for i in range(4)]
-        free_threes = 0
-        if any([np.any(arr >= 16) for arr in res_l]):
-            free_threes += 1
-        if any([np.any(arr >= 16) for arr in res_c]):
-            free_threes += 1
-        if any([np.any(arr >= 16) for arr in res_d1]):
-            free_threes += 1
-        if any([np.any(arr >= 16) for arr in res_d2]):
-            free_threes += 1
-        if free_threes > 1:
-            return True
-        return False
+        #r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + pad_width + 1, yx[1] + pad_width:yx[1] + pad_width + 1], c * k_free_threes['column']))
+        #r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0] + 2 * pad_width + 1, yx[1] + pad_width:yx[1] + pad_width + 1], c * k_free_threes['column']))
+        #
+        #r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0]+pad_width + 1, yx[1]:yx[1] + pad_width + 1], c * k_free_threes['line']))
+        #r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0]+pad_width + 1, yx[1] + pad_width:yx[1] + 2 * pad_width + 1], c * k_free_threes['line']))
+        #
+        #r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + pad_width + 1, yx[1]:yx[1] + pad_width + 1], c * k_free_threes['diag1']))
+        #r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + pad_width + 1, yx[1] + pad_width:yx[1] + 2 * pad_width + 1], c * k_free_threes['diag2']))
+        #r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0] + 2 * pad_width + 1, yx[1]:yx[1] + pad_width + 1], c * k_free_threes['diag2']))
+        #r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0] + 2 * pad_width + 1, yx[1] + pad_width:yx[1] + 2 * pad_width + 1], c * k_free_threes['diag1']))
+        #res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
+        #free_threes = 0
+        #for ii, r_conv in enumerate(res):
+        #    print(f"({ii}) r_conv = {r_conv}")
+        #return False
+        ## Convolution sur la ligne 
+        #view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
+        #res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes['line'])) for i in range(4)]
+        #
+        ##Convolution sur la colonne:
+        #view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
+        #res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes['column'].flatten())) for i in range(4)]
+        #
+        ## Convolution sur diagonale descendante gauche-droite
+        #view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+        #res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes['diag1'])) for i in range(4)]
+        #
+        ## Convolution sur diagonale montante gauche-droite
+        #view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
+        #res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes['diag2'])) for i in range(4)]
+        #free_threes = 0
+        #if any([np.any(arr >= 16) for arr in res_l]):
+        #    free_threes += 1
+        #if any([np.any(arr >= 16) for arr in res_c]):
+        #    free_threes += 1
+        #if any([np.any(arr >= 16) for arr in res_d1]):
+        #    free_threes += 1
+        #if any([np.any(arr >= 16) for arr in res_d2]):
+        #    free_threes += 1
+        #if free_threes > 1:
+        #    return True
+        #return False
 
 
     def isposition_available(self) -> bool:
@@ -351,7 +372,7 @@ class GameUI(MyWindow):
         return True
         
 
-    def placing_stone(self, event, color):
+    def placing_stone(self, event):
         """Creates and move and display the widget corresponding to the new
             stone (white/black) according to the coordinates in event (when
             clicking or when the algorithm is playing).
@@ -439,9 +460,8 @@ class GameUI(MyWindow):
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
                 return
-            self.placing_stone(event, self.stone)
+            self.placing_stone(event)
             self.iscapture_position()
-            #self.check_board()
             self.i_round += 1
             self.UiDestroyBoard()
             self.UiGenBoard()
@@ -453,9 +473,7 @@ class GameUI(MyWindow):
             self.node = self.agent.find_best_move(self.node)
             if self.node != None:
                 self.history.add_nodes([self.node])
-                prev_grid = self.grid
                 self.grid = self.node.grid
-                dgrid = prev_grid - self.grid
 
                 self.UiDestroyBoard()
                 self.UiGenBoard()
