@@ -22,7 +22,7 @@ from game.history import History
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
-from constants import WHITE, BLACK, k_diags, k_lines, k_captures, k_free_threes
+from constants import WHITE, BLACK, k_captures, k_free_threes
 
 TOT = 0
 
@@ -248,27 +248,21 @@ class GameUI(MyWindow):
         global TOT
         yx = self.current_coord
         c = self.stone
-        k_cap_line = c * np.array([[1, -1, -1, 1]])
-        k_cap_diag = c * np.array([[1,  0,  0, 0],
-                                   [0, -1,  0, 0],
-                                   [0,  0, -1, 0],
-                                   [0,  0,  0, 1]])
-        extend_grid = np.zeros((SIZE + 6,SIZE + 6))
-        extend_grid[3:-3, 3:-3] = self.grid
-        extend_grid[yx[0] + 3, yx[1] + 3] = c
         
-        print('>' * 5 + ' EXTENDED BOARD ')
-        print(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 4])
-        r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 4], np.rot90(k_cap_line)))
-        r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 4], np.rot90(k_cap_line)))
+        pad_width = 3
+        extend_grid = np.pad(self.grid, (pad_width), "constant", constant_values = (0))
+        extend_grid[yx[0] + pad_width, yx[1] + pad_width] = c
         
-        r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1]:yx[1] + 4], k_cap_line))
-        r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1] + 3:yx[1] + 7], k_cap_line))
+        r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 4], c * k_captures['column']))
+        r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 4], c * k_captures['column']))
         
-        r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1]:yx[1] + 4], k_cap_diag))
-        r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 7], np.rot90(k_cap_diag)))
-        r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1]:yx[1] + 4], k_cap_diag))
-        r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 7], np.rot90(k_cap_diag)))
+        r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1]:yx[1] + 4], c * k_captures['line']))
+        r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1] + 3:yx[1] + 7], c * k_captures['line']))
+        
+        r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1]:yx[1] + 4], c * k_captures['diag1']))
+        r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 7], c * k_captures['diag2']))
+        r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1]:yx[1] + 4], c * k_captures['diag1']))
+        r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 7], c * k_captures['diag2']))
         res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
         
         print(f' =================== {TOT} =================== ')
