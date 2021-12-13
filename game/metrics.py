@@ -1,12 +1,27 @@
+# =========================================================================== #
+# ____________________  |Importation des lib/packages|   ____________________ #
+# =========================================================================== #
 from __future__ import annotations
 from typing import List, Tuple
 import numpy as np
 from numba import njit
 
-
+# =========================================================================== #
+#                          | constants definition |                           #
+# =========================================================================== #
 BLACK = 1
 WHITE = -1
 
+
+kernels = np.array([[1, 1, 1, 1],
+                    [1, 1, 1, 1],
+                    [0, 1, 1, 1],
+                    [0, 0, 1, 1],
+                    [0, 0, 0, 1]])
+
+# =========================================================================== #
+#                           | Classes definition |                            #
+# =========================================================================== #
 class Position():
     def __init__(self, i: int, j: int) -> None:
         self.i = i
@@ -53,11 +68,12 @@ class StoneSequence():
     def _next_idx(self, distance: int) -> Tuple[int, int]:
         raise NotImplementedError
 
-    def is_surrounded(self) -> bool:  
+    def is_surrounded(self, last_coord: Tuple[int, int]) -> bool:  
         # Check if both ends of the sequence are closed by an opponent's stone.
         return (min(self.distance_to_edge) > 0
                 and self.grid[self._previous_idx(1)] == (self.color * -1)
-                and self.grid[self._next_idx(1)] == (self.color * -1))
+                and self.grid[self._next_idx(1)] == (self.color * -1)
+                and (last_coord in (self._next_idx(1), self._previous_idx(1))))
 
     def is_captured(self) -> bool:
         return self.length == 2 and self.is_surrounded()
@@ -160,8 +176,11 @@ class Diagonal(StoneSequence):
         return self.end[0] + distance, self.end[1] + (self.slope * distance)
 
 
+# =========================================================================== #
+#                          | Functions definition |                           #
+# =========================================================================== #
 @njit(parallel=True, fastmath=True)
-def measure_sequence_numba(grid: np.ndarray, color: int) -> List[int]:
+def _DEPRECATED_measure_sequence_numba(grid: np.ndarray, color: int) -> List[int]:
     seqs = []
     for i, r in enumerate(grid):
         len_ = 0
@@ -188,9 +207,11 @@ def measure_sequence_numba(grid: np.ndarray, color: int) -> List[int]:
                     start_i, start_j = i, j+1
     return seqs
 
+
 def measure_sequence(grid: list, color: int) -> list:
     numba_seqs = measure_sequence_numba(grid, color)
     return [(len_, (start_i, start_j), color, grid) for len_, start_i, start_j in numba_seqs]
+
 
 def measure_sequence_(grid: np.ndarray, color: int) -> list:
 # def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
@@ -227,6 +248,31 @@ def measure_row(grid: np.ndarray, color: int) -> List[Row]:
     # return [Row(seq.length, seq.start, seq.color, grid) for seq in sequences]
 
 
+@njit(parallel=True, fastmath=True)
+def measure_row(grid: np.ndarray, color: int) -> List[Row]:
+    """[summary]
+
+    Args:
+        grid (np.ndarray): [description]
+        color (int): [description]
+
+    Returns:
+        List[Row]: [description]
+    """
+    extend_grid = np.pad(grid, (0, 5), "constant", constant_values=(0, 0))
+    stack = np.argwhere(extend_grid == color)
+    res = []
+    for yx in stack:
+        res.append(np.dot(extend_grid[yx[0]:yx[0] + 1, yx[1]:yx[1] + 6], kernels))
+    res = (res / np.arange(1, 6)).astype('int8')
+    i = 0
+    while i < stack.shape[0]:
+        
+        i += 1
+        
+        
+    
+
 
 def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     # Transpose the cols as rows to measure it
@@ -235,6 +281,7 @@ def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     return [Column(len_, Position(pos[0], pos[1]).swap(), color, grid) for len_, pos, color, grid in cols_sequences]
     # cols = [Column(seq.length, seq.start.swap(), seq.color, grid) for seq in cols_sequences]
     # return cols
+    
 
 def convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
     d_i, d_j = d_pos.i, d_pos.j
@@ -257,6 +304,7 @@ def convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
     else:
         return Position(i, i_max - j) 
 
+
 def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
     i_max = grid.shape[0] - 1
     l_diags_lst = [np.diag(grid, k=n) for n in range(-grid.shape[0]+1, grid.shape[1])]
@@ -269,8 +317,9 @@ def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
     l_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=True),  seq.color, grid, left=True) for seq in l_diags_as_row]
     # r_diags = [Diagonal(len_, convert_to_pos(Position(pos[0], pos[1]), i_max, left=True), color, grid, left=False) for len_, pos, color, grid in r_diags_as_row]
     r_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=False), seq.color, grid, left=False) for seq in r_diags_as_row]
-    
+
     return l_diags + r_diags
+
 
 def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences = []
