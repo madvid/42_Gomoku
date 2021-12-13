@@ -120,7 +120,7 @@ def longest_line(node: Node) -> int:
 
 
 def sum_longest(grid: np.ndarray) -> int:
-    return longest_line(grid)**2 + stone_sum(grid)
+    return longest_line(node)**2 + stone_sum(grid)
 
 def dummy_mask(grid: np.ndarray) -> int:
     msk = np.array([
@@ -197,17 +197,17 @@ def mask4(grid: np.ndarray) -> int:
     return np.sum(mask * grid)
 
 
-def sum_dummy(grid: np.ndarray) -> int:
-    return dummy_mask(grid) + longest_line(grid)
+def sum_dummy(node: Node) -> int:
+    return dummy_mask(node.grid) + longest_line(node)
 
-def sum_mask2(grid: np.ndarray) -> int:
-    return mask2(grid) + longest_line(grid)
+def sum_mask2(node: Node) -> int:
+    return mask2(node.grid) + longest_line(node)
 
 def sum_mask3(node: Node) -> int:
     return mask3(node.grid) + longest_line(node)
 
-def sum_mask4(grid: np.ndarray) -> int:
-    return mask4(grid) + longest_line(grid)
+def sum_mask4(node: Node) -> int:
+    return mask4(node.grid) + longest_line(node)
 
 
 def kern2(grid: np.ndarray) -> int:
@@ -254,11 +254,11 @@ def kern4(grid: np.ndarray) -> int:
 )
     return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
 
-def sum_kern2(grid: np.ndarray) -> int:
-    return kern2(grid) + longest_line(grid)
+def sum_kern2(node: Node) -> int:
+    return kern2(node.grid) + longest_line(node)
 
-def sum_kern3(grid: np.ndarray) -> int:
-    return kern3(grid) + longest_line(grid)
+def sum_kern3(node: Node) -> int:
+    return kern3(node.grid) + longest_line(node)
 
-def sum_kern4(grid: np.ndarray) -> int:
-    return kern4(grid) + longest_line(grid)
+def sum_kern4(node: Node) -> int:
+    return kern4(node.grid) + longest_line(node)
