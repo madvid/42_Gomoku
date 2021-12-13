@@ -1,9 +1,12 @@
 from __future__ import annotations
 import numpy as np
+from scipy import signal
 import copy
 from typing import Tuple, List
+import sys
 
-from metrics import *
+from game.metrics import *
+from game.rules import iscapture_position
 
 BLACK = 1
 WHITE = -1
@@ -12,12 +15,13 @@ class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric: dict = {} # A dict containing the scoring metrics for black and white
         
-    def __init__(self, parent: Node, grid: np.ndarray, color: int) -> None:
+    def __init__(self, parent: Node, grid: np.ndarray, color: int, last_coord = None) -> None:
         self.parent = parent
         self.grid = grid
         self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
         self.stone_seq = {BLACK:[], WHITE:[]}
+        self.last_coord = last_coord
 
     def is_terminal(self):
         # FIXME
@@ -26,7 +30,7 @@ class Node():
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color
-        return Node(self, tmp_grid, color * -1)
+        return Node(self, tmp_grid, color * -1, pos)
 
     def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
         def remove_row(grid: np.ndarray, row: Row):
@@ -63,18 +67,20 @@ class Node():
         possibles_moves_idx = np.argwhere(self.grid == 0)
         possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
         for m in possibles_moves:
-            m.stone_seq[BLACK] = collect_sequences(m.grid, BLACK)
-            m.stone_seq[WHITE] = collect_sequences(m.grid, WHITE)
+            #m.stone_seq[BLACK] = collect_sequences(m.grid, BLACK)
+            #m.stone_seq[WHITE] = collect_sequences(m.grid, WHITE)
             # stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
+            
             # Captured stones
-            captured_black_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK])
-            captured_white_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[WHITE])
+            iscapture_position(m.grid, m.last_coord, m.color)
+            #captured_black_stones = filter(lambda x: x.length == 2 and x.is_surrounded(m.last_coord), m.stone_seq[BLACK])
+            #captured_white_stones = filter(lambda x: x.length == 2 and x.is_surrounded(m.last_coord), m.stone_seq[WHITE])
             # captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK] + m.stone_seq[WHITE])
             # print(f"captured = {captured_stones[0].grid}")
-            m.grid = self.remove_sequences(m.grid, captured_black_stones)
-            m.grid = self.remove_sequences(m.grid, captured_white_stones)
-            m.stone_seq[BLACK] = [s for s in m.stone_seq[BLACK] if not (s.length == 2 and s.is_surrounded())]
-            m.stone_seq[WHITE] = [s for s in m.stone_seq[WHITE] if not (s.length == 2 and s.is_surrounded())]
+            #m.grid = self.remove_sequences(m.grid, captured_black_stones)
+            #m.grid = self.remove_sequences(m.grid, captured_white_stones)
+            #m.stone_seq[BLACK] = [s for s in m.stone_seq[BLACK] if not (s.length == 2 and s.is_surrounded())]
+            #m.stone_seq[WHITE] = [s for s in m.stone_seq[WHITE] if not (s.length == 2 and s.is_surrounded())]
 
             # # Double free-three
             # cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
@@ -119,8 +125,8 @@ def longest_line(node: Node) -> int:
 #     return black_max - white_max
 
 
-def sum_longest(grid: np.ndarray) -> int:
-    return longest_line(grid)**2 + stone_sum(grid)
+def sum_longest(node: Node) -> int:
+    return longest_line(node)**2 + stone_sum(node.grid)
 
 def dummy_mask(grid: np.ndarray) -> int:
     msk = np.array([
@@ -197,17 +203,17 @@ def mask4(grid: np.ndarray) -> int:
     return np.sum(mask * grid)
 
 
-def sum_dummy(grid: np.ndarray) -> int:
-    return dummy_mask(grid) + longest_line(grid)
+def sum_dummy(node: Node) -> int:
+    return dummy_mask(node.grid) + longest_line(node)
 
-def sum_mask2(grid: np.ndarray) -> int:
-    return mask2(grid) + longest_line(grid)
+def sum_mask2(node: Node) -> int:
+    return mask2(node.grid) + longest_line(node)
 
 def sum_mask3(node: Node) -> int:
     return mask3(node.grid) + longest_line(node)
 
-def sum_mask4(grid: np.ndarray) -> int:
-    return mask4(grid) + longest_line(grid)
+def sum_mask4(node: Node) -> int:
+    return mask4(node.grid) + longest_line(node)
 
 
 def kern2(grid: np.ndarray) -> int:
@@ -254,11 +260,11 @@ def kern4(grid: np.ndarray) -> int:
 )
     return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
 
-def sum_kern2(grid: np.ndarray) -> int:
-    return kern2(grid) + longest_line(grid)
+def sum_kern2(node: Node) -> int:
+    return kern2(node.grid) + longest_line(node)
 
-def sum_kern3(grid: np.ndarray) -> int:
-    return kern3(grid) + longest_line(grid)
+def sum_kern3(node: Node) -> int:
+    return kern3(node.grid) + longest_line(node)
 
-def sum_kern4(grid: np.ndarray) -> int:
-    return kern4(grid) + longest_line(grid)
+def sum_kern4(node: Node) -> int:
+    return kern4(node.grid) + longest_line(node)
