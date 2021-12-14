@@ -4,7 +4,12 @@
 from __future__ import annotations
 from typing import List, Tuple, Callable
 import numpy as np
+from functools import partial
 from numba import njit
+
+
+# Typing related (type aliases, NewType, ...)
+KernelOutput = Tuple[Tuple[int, int], Tuple[int, int]]
 
 # =========================================================================== #
 #                          | constants definition |                           #
@@ -18,6 +23,7 @@ kernels = np.array([[1, 1, 1, 1],
                     [0, 1, 1, 1],
                     [0, 0, 1, 1],
                     [0, 0, 0, 1]])
+
 
 # =========================================================================== #
 #                           | Classes definition |                            #
@@ -151,9 +157,13 @@ class Column(StoneSequence):
 
 
 class Diagonal(StoneSequence):
-    def __init__(self, length: int, position: Position, color: int, grid: np.ndarray, left: bool) -> None:
+    LEFT = True
+    def __init__(self, length: int, position: Position, color: int, grid: np.ndarray, left: bool=None) -> None:
         super().__init__(length, position, color, grid)
-        self.left = left
+        if left is None:
+            self.left = Diagonal.LEFT
+        else:
+            self.left = left
         self.slope = 1 if left else -1
         self.end = self.start + Position(length -1 , self.slope * (length -1))
         self.max_height = self.grid.shape[0] - 1
@@ -208,12 +218,12 @@ def _DEPRECATED_measure_sequence_numba(grid: np.ndarray, color: int) -> List[int
     return seqs
 
 
-def measure_sequence(grid: list, color: int) -> list:
+def _DEPRECATED_measure_sequence(grid: list, color: int) -> list:
     numba_seqs = measure_sequence_numba(grid, color)
     return [(len_, (start_i, start_j), color, grid) for len_, start_i, start_j in numba_seqs]
 
 
-def measure_sequence_(grid: np.ndarray, color: int) -> list:
+def _DEPRECATED_measure_sequence_(grid: np.ndarray, color: int) -> list:
 # def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
     seqs = []
     for i, r in enumerate(grid):
@@ -242,24 +252,73 @@ def measure_sequence_(grid: np.ndarray, color: int) -> list:
     return seqs
 
 
-def measure_row(grid: np.ndarray, color: int) -> List[Row]:
+def _DEPRECATED_measure_row(grid: np.ndarray, color: int) -> List[Row]:
     sequences = measure_sequence(grid, color)
     return [Row(len_, Position(pos[0], pos[1]), color, grid) for len_, pos, color, grid in sequences]
     # return [Row(seq.length, seq.start, seq.color, grid) for seq in sequences]
 
 
-def get_kern_row_idx(pos: Tuple[int,int]):
+def _DEPRECATED_measure_col(grid: np.ndarray, color: int) -> List[Column]:
+    # Transpose the cols as rows to measure it
+    cols_sequences = measure_sequence(grid.T, color)
+    # Swap position to get it right
+    return [Column(len_, Position(pos[0], pos[1]).swap(), color, grid) for len_, pos, color, grid in cols_sequences]
+    # cols = [Column(seq.length, seq.start.swap(), seq.color, grid) for seq in cols_sequences]
+    # return cols
+
+
+def _DEPRECATED_measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
+    i_max = grid.shape[0] - 1
+    l_diags_lst = [np.diag(grid, k=n) for n in range(-grid.shape[0]+1, grid.shape[1])]
+    r_diags_lst = [np.diag(np.fliplr(grid), k=n) for n in range(-grid.shape[0]+1, grid.shape[1])]
+    
+    l_diags_as_row = measure_sequence_(l_diags_lst, color)
+    r_diags_as_row = measure_sequence_(r_diags_lst, color)
+
+    # l_diags = [Diagonal(len_, convert_to_pos(Position(pos[0], pos[1]), i_max, left=True), color, grid, left=True) for len_, pos, color, grid in l_diags_as_row]
+    l_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=True),  seq.color, grid, left=True) for seq in l_diags_as_row]
+    # r_diags = [Diagonal(len_, convert_to_pos(Position(pos[0], pos[1]), i_max, left=True), color, grid, left=False) for len_, pos, color, grid in r_diags_as_row]
+    r_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=False), seq.color, grid, left=False) for seq in r_diags_as_row]
+
+    return l_diags + r_diags
+
+
+def _DEPRECATED_convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
+    d_i, d_j = d_pos.i, d_pos.j
+    # Convert to the proper position of the diagonal.
+    # The position of the diagonal correspond to the 'uppest' stone on the board,
+    # (i.e. the smallest value of col row index).
+    if d_i < i_max:
+        i = i_max - d_i + d_j
+        j = d_j
+    elif d_i == i_max:
+        i = d_j
+        j = d_j
+    else:
+        i = d_j
+        j = d_i - i_max + d_j
+        
+    # If the diagonal start from the right, flip the row index.
+    if left:
+        return Position(i, j)
+    else:
+        return Position(i, i_max - j)
+
+
+def get_kern_row_idx(pos: Tuple[int,int]) -> KernelOutput:
     return [pos[0]] * 5, [range(pos[1], pos[1] + 6)]
 
-def get_kern_col_idx(pos: Tuple[int,int]):
+
+def get_kern_col_idx(pos: Tuple[int,int]) -> KernelOutput:
     return [range(pos[0], pos[0] + 6)], [pos[1]] * 5
 
-def get_kern_diag_idx(pos: Tuple[int,int]):
+
+def get_kern_diag_idx(pos: Tuple[int,int]) -> KernelOutput:
     return range(pos[0], pos[0] + 6), range(pos[1], pos[1] + 6)
 
 
 @njit(parallel=True, fastmath=True)
-def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tuple[int, int]], Tuple[Tuple[int, int], Tuple[int, int]]], seq_type: StoneSequence) -> List[Row]: # FIXME:  typage 
+def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tuple[int, int]], KernelOutput], seq_type: StoneSequence) -> List[StoneSequence]: # FIXME:  typage 
     """[summary]
 
     Args:
@@ -283,72 +342,31 @@ def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tup
             i += 1
     
     return res
-        
+
+  
 def measure_row(grid: np.ndarray, color: int) -> List[Row]:
     return measure_sequence(grid, color, get_kern_row_idx, Row)
+
 
 def measure_col(grid: np.ndarray, color: int) -> List[Column]:
     return measure_sequence(grid, color, get_kern_col_idx, Column)
 
+
 def measure_diag(grid: np.ndarray, color: int, left: bool) -> List[Diagonal]:
     if left:
+        Diagonal.LEFT = True
         return measure_sequence(grid, color, get_kern_diag_idx, Diagonal)
-
-    
-
-
-def measure_col(grid: np.ndarray, color: int) -> List[Column]:
-    # Transpose the cols as rows to measure it
-    cols_sequences = measure_sequence(grid.T, color)
-    # Swap position to get it right
-    return [Column(len_, Position(pos[0], pos[1]).swap(), color, grid) for len_, pos, color, grid in cols_sequences]
-    # cols = [Column(seq.length, seq.start.swap(), seq.color, grid) for seq in cols_sequences]
-    # return cols
-    
-
-def convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
-    d_i, d_j = d_pos.i, d_pos.j
-    # Convert to the proper position of the diagonal.
-    # The position of the diagonal correspond to the 'uppest' stone on the board,
-    # (i.e. the smallest value of col row index).
-    if d_i < i_max:
-        i = i_max - d_i + d_j
-        j = d_j
-    elif d_i == i_max:
-        i = d_j
-        j = d_j
     else:
-        i = d_j
-        j = d_i - i_max + d_j
-        
-    # If the diagonal start from the right, flip the row index.
-    if left:
-        return Position(i, j)
-    else:
-        return Position(i, i_max - j) 
-
-
-def measure_diag(grid: np.ndarray, color: int) -> List[Diagonal]:
-    i_max = grid.shape[0] - 1
-    l_diags_lst = [np.diag(grid, k=n) for n in range(-grid.shape[0]+1, grid.shape[1])]
-    r_diags_lst = [np.diag(np.fliplr(grid), k=n) for n in range(-grid.shape[0]+1, grid.shape[1])]
-    
-    l_diags_as_row = measure_sequence_(l_diags_lst, color)
-    r_diags_as_row = measure_sequence_(r_diags_lst, color)
-
-    # l_diags = [Diagonal(len_, convert_to_pos(Position(pos[0], pos[1]), i_max, left=True), color, grid, left=True) for len_, pos, color, grid in l_diags_as_row]
-    l_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=True),  seq.color, grid, left=True) for seq in l_diags_as_row]
-    # r_diags = [Diagonal(len_, convert_to_pos(Position(pos[0], pos[1]), i_max, left=True), color, grid, left=False) for len_, pos, color, grid in r_diags_as_row]
-    r_diags = [Diagonal(seq.length, convert_to_pos(seq.start, i_max, left=False), seq.color, grid, left=False) for seq in r_diags_as_row]
-
-    return l_diags + r_diags
+        Diagonal.LEFT = False
+        return measure_sequence(grid, color, get_kern_diag_idx, Diagonal)
 
 
 def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences = []
     sequences.extend(measure_row(grid, color))
     sequences.extend(measure_col(grid, color))
-    sequences.extend(measure_diag(grid, color))
+    sequences.extend(measure_diag(grid, color), True)
+    sequences.extend(measure_diag(np.fliplr(grid), color, False))
     return sequences
 
 # def update_sequences(grid: np.ndarray, color: int, sequences: List[StoneSequence], pos: Position) -> List[StoneSequence]:
