@@ -2,7 +2,7 @@
 # ____________________  |Importation des lib/packages|   ____________________ #
 # =========================================================================== #
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 import numpy as np
 from numba import njit
 
@@ -248,8 +248,18 @@ def measure_row(grid: np.ndarray, color: int) -> List[Row]:
     # return [Row(seq.length, seq.start, seq.color, grid) for seq in sequences]
 
 
+def get_kern_row_idx(pos: Tuple[int,int]):
+    return [pos[0]] * 5, [range(pos[1], pos[1] + 6)]
+
+def get_kern_col_idx(pos: Tuple[int,int]):
+    return [range(pos[0], pos[0] + 6)], [pos[1]] * 5
+
+def get_kern_diag_idx(pos: Tuple[int,int]):
+    return range(pos[0], pos[0] + 6), range(pos[1], pos[1] + 6)
+
+
 @njit(parallel=True, fastmath=True)
-def measure_row(grid: np.ndarray, color: int) -> List[Row]:
+def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tuple[int, int]], Tuple[Tuple[int, int], Tuple[int, int]]], seq_type: StoneSequence) -> List[Row]: # FIXME:  typage 
     """[summary]
 
     Args:
@@ -262,15 +272,28 @@ def measure_row(grid: np.ndarray, color: int) -> List[Row]:
     extend_grid = np.pad(grid, (0, 5), "constant", constant_values=(0, 0))
     stack = np.argwhere(extend_grid == color)
     res = []
-    for yx in stack:
-        res.append(np.dot(extend_grid[yx[0]:yx[0] + 1, yx[1]:yx[1] + 6], kernels))
-    res = (res / np.arange(1, 6)).astype('int8')
     i = 0
     while i < stack.shape[0]:
+        tmp = np.dot(extend_grid[get_kernel_idx(stack[i])], kernels)
+        tmp = (tmp / np.arange(2, 6)).astype('int8').sum(axis=1) + 1
+        if tmp > 1:
+            res.append(seq_type(lenghth=tmp, position=stack[i]))
+            i += res[-1] - 1
+        else:
+            i += 1
+    
+    return res
         
-        i += 1
-        
-        
+def measure_row(grid: np.ndarray, color: int) -> List[Row]:
+    return measure_sequence(grid, color, get_kern_row_idx, Row)
+
+def measure_col(grid: np.ndarray, color: int) -> List[Column]:
+    return measure_sequence(grid, color, get_kern_col_idx, Column)
+
+def measure_diag(grid: np.ndarray, color: int, left: bool) -> List[Diagonal]:
+    if left:
+        return measure_sequence(grid, color, get_kern_diag_idx, Diagonal)
+
     
 
 
@@ -299,7 +322,7 @@ def convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -> Position:
         j = d_i - i_max + d_j
         
     # If the diagonal start from the right, flip the row index.
-    if left: 
+    if left:
         return Position(i, j)
     else:
         return Position(i, i_max - j) 
