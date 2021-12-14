@@ -22,7 +22,7 @@ from game.history import History
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
-from constants import WHITE, BLACK, k_captures, k_free_threes
+from constants import WHITE, BLACK, k_captures, k_freethree
 
 TOT = 0
 
@@ -55,6 +55,21 @@ def current_coordinates(pos:QtCore.QPoint) -> np.array:
     coord = np.array([(nearest[1] // 31) - 1, (nearest[0] // 31) - 1])
     return coord
 
+
+def get_line_idx(yx:np.array):
+    return (np.ones((1,9)) * yx[0]).astype('int8'), (np.arange(-4, 5) + yx[1]).astype('int8')
+
+
+def get_col_idx(yx:np.array):
+    return (np.arange(-4, 5) + yx[0]).astype('int8'), (np.ones((1,9)) * yx[1]).astype('int8')
+
+
+def get_diag1_idx(yx:np.array):
+    return (np.arange(-4, 5) + yx[0]).astype('int8'), (np.arange(-4, 5) + yx[1]).astype('int8')
+
+
+def get_diag2_idx(yx:np.array):
+    return (np.arange(4, -5, -1) + yx[0]).astype('int8'), (np.arange(-4, 5) + yx[1]).astype('int8')
 
 # =========================================================================== #
 #                           | Classes definition |                            #
@@ -144,7 +159,9 @@ class GameUI(MyWindow):
             * kernel ([np.array]): the kernel to use for convolution.
         """
         sub_grid = GameUI._subboard_4_Conv2D(grid, k_shape=kernel.shape, stride=grid.strides)
-        res_conv = np.multiply(sub_grid, kernel)
+        res_conv = np.dot(sub_grid, kernel)
+        print("sub_grid = \n", sub_grid)
+        print("res_conv = \n", res_conv)
         convolved = np.einsum('ijkl->ij', res_conv)
         return convolved
 
@@ -290,7 +307,7 @@ class GameUI(MyWindow):
 
             
     @staticmethod
-    def isdoublefreethree_position(yx, grid, color) -> bool:
+    def isdoublefreethree_position(yx:np.array, grid:np.array, color:int) -> bool:
         """[summary]
         Args:
             yx ([type]): [description]
@@ -298,60 +315,22 @@ class GameUI(MyWindow):
         Returns:
             bool: [description]
         """
-        pad_width = 8
+        pad_width = 5
         c = color
-        extend_grid = np.pad(grid, pad_width, "constant", constant_values = (0))
-        
-        extend_grid[yx[0] + pad_width, yx[1] + pad_width] = color
-        
-        #r_conv_c = _my_conv2D(extend_grid)
-        #r_conv_l = _my_conv2D(extend_grid)
-        #
-        #r_conv_d1 = _my_conv2D(extend_grid)
-        #r_conv_d2 = _my_conv2D(extend_grid)
-        
-        #r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + pad_width + 1, yx[1] + pad_width:yx[1] + pad_width + 1], c * k_free_threes['column']))
-        #r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0] + 2 * pad_width + 1, yx[1] + pad_width:yx[1] + pad_width + 1], c * k_free_threes['column']))
-        #
-        #r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0]+pad_width + 1, yx[1]:yx[1] + pad_width + 1], c * k_free_threes['line']))
-        #r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0]+pad_width + 1, yx[1] + pad_width:yx[1] + 2 * pad_width + 1], c * k_free_threes['line']))
-        #
-        #r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + pad_width + 1, yx[1]:yx[1] + pad_width + 1], c * k_free_threes['diag1']))
-        #r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + pad_width + 1, yx[1] + pad_width:yx[1] + 2 * pad_width + 1], c * k_free_threes['diag2']))
-        #r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0] + 2 * pad_width + 1, yx[1]:yx[1] + pad_width + 1], c * k_free_threes['diag2']))
-        #r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + pad_width:yx[0] + 2 * pad_width + 1, yx[1] + pad_width:yx[1] + 2 * pad_width + 1], c * k_free_threes['diag1']))
-        #res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
-        #free_threes = 0
-        #for ii, r_conv in enumerate(res):
-        #    print(f"({ii}) r_conv = {r_conv}")
-        #return False
-        ## Convolution sur la ligne 
-        #view_l = tmp[yx[0] + 4, yx[1]:yx[1] + 9]
-        #res_l = [np.sum(np.multiply(view_l[i:i+6], k_free_threes['line'])) for i in range(4)]
-        #
-        ##Convolution sur la colonne:
-        #view_c = tmp[yx[0]:yx[0] + 9, yx[1] + 4]
-        #res_c = [np.sum(np.multiply(view_c[i:i+6], k_free_threes['column'].flatten())) for i in range(4)]
-        #
-        ## Convolution sur diagonale descendante gauche-droite
-        #view_d1 = [tmp[yx[0]+i:yx[0]+6+i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-        #res_d1 = [np.sum(np.multiply(view_d1[i], k_free_threes['diag1'])) for i in range(4)]
-        #
-        ## Convolution sur diagonale montante gauche-droite
-        #view_d2 = [tmp[yx[0] +3 - i:yx[0] + 9 -i, yx[1]+i:yx[1]+6+i] for i in range(4)]
-        #res_d2 = [np.sum(np.multiply(view_d2[i], k_free_threes['diag2'])) for i in range(4)]
-        #free_threes = 0
-        #if any([np.any(arr >= 16) for arr in res_l]):
-        #    free_threes += 1
-        #if any([np.any(arr >= 16) for arr in res_c]):
-        #    free_threes += 1
-        #if any([np.any(arr >= 16) for arr in res_d1]):
-        #    free_threes += 1
-        #if any([np.any(arr >= 16) for arr in res_d2]):
-        #    free_threes += 1
-        #if free_threes > 1:
-        #    return True
-        #return False
+        extend_grid = np.pad(grid + c, pad_width, "constant", constant_values = (0))
+        extend_grid[yx[0] + pad_width, yx[1] + pad_width] = 2 * c
+        res = []
+        res.append(np.convolve(extend_grid[get_line_idx(yx + pad_width)].reshape(-1,), c * k_freethree, "valid"))
+        res.append(np.convolve(extend_grid[get_col_idx(yx + pad_width)].reshape(-1,), c * k_freethree, "valid"))
+        res.append(np.convolve(extend_grid[get_diag1_idx(yx + pad_width)], c * k_freethree, "valid"))
+        res.append(np.convolve(extend_grid[get_diag2_idx(yx + pad_width)], c * k_freethree, "valid"))
+        nb_free_three = 0
+        for r_conv in res:
+            if (r_conv >= 16).any():
+                nb_free_three += 1
+        if nb_free_three > 1:
+            return True
+        return False
 
 
     def isposition_available(self) -> bool:
@@ -368,6 +347,7 @@ class GameUI(MyWindow):
             print("position is not available.")
             return False
         if self.isdoublefreethree_position(self.current_coord, self.grid, self.stone):
+            print("position is not available: double free three not allows.")
             return False
         return True
         
