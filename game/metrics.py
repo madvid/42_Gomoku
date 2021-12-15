@@ -60,7 +60,7 @@ def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tup
     """
     extend_grid = np.pad(grid, (0, 5), "constant", constant_values=(0, 0))
     stack = np.argwhere(extend_grid == color)
-    res = []
+    res = [1]
     i = 0
     while i < stack.shape[0]:
         tmp = np.dot(extend_grid[get_kernel_idx(stack[i])], kernels)
@@ -70,24 +70,21 @@ def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tup
             i += res[-1] - 1
         else:
             i += 1
-    
     return max(res)
 
-def measure_row(grid: np.ndarray, color: int) -> List[Row]:
-    return measure_sequence(grid, color, get_kern_row_idx, Row)
+def measure_row(grid: np.ndarray, color: int) -> int:
+    return measure_sequence(grid, color, get_kern_row_idx)
 
-def measure_col(grid: np.ndarray, color: int) -> List[Column]:
-    return measure_sequence(grid, color, get_kern_col_idx, Column)
+def measure_col(grid: np.ndarray, color: int) -> int:
+    return measure_sequence(grid, color, get_kern_col_idx)
 
-def measure_diag(grid: np.ndarray, color: int, left: bool) -> List[Diagonal]:
+def measure_diag(grid: np.ndarray, color: int, left: bool) -> int:
     if left:
-        Diagonal.LEFT = True
-        return measure_sequence(grid, color, get_kern_diag_idx, Diagonal)
+        return measure_sequence(grid, color, get_kern_diag_idx)
     else:
-        Diagonal.LEFT = False
-        return measure_sequence(grid, color, get_kern_diag_idx, Diagonal)
+        return measure_sequence(np.fliplr(grid), color, get_kern_diag_idx)
 
-def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
+def collect_sequences(grid: np.ndarray, color: int) -> int:
     sequences = []
     sequences.append(measure_row(grid, color))
     sequences.append(measure_col(grid, color))

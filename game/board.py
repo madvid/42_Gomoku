@@ -3,23 +3,30 @@ import numpy as np
 import copy
 from typing import Tuple, List
 
-from metrics import *
+from game.metrics import *
 from scipy import signal
+from game.rules import iscapture_position
 
 BLACK = 1
 WHITE = -1
-
+k_score = np.array([[1, 0, 1, 0, 1],
+                    [0, 1, 1, 1, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 1, 1, 1, 0],
+                    [1, 0, 1, 0, 1]])
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric: dict = {} # A dict containing the scoring metrics for black and white
         
-    def __init__(self, parent: Node, grid: np.ndarray, color: int, max_seq_length: int) -> None:
+    def __init__(self, parent: Node, grid: np.ndarray, color: int, max_seq_length: int = 0, current_pos:Tuple[int, int] = None) -> None:
         self.parent = parent
         self.grid = grid
+        self.current_pos = current_pos
         self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
         self.max_seq_length = max_seq_length
+        self.update_score()
 
     def is_terminal(self):
         return self.max_seq_length >= 5
@@ -28,7 +35,27 @@ class Node():
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color
         max_seq_length = collect_sequences(tmp_grid, color)
-        return Node(self, tmp_grid, color * -1, max_seq_length)
+        return Node(self, tmp_grid, color * -1, max_seq_length, pos)
+
+    def update_score(self):
+        if self.parent is None or self.current_pos is None:
+            self.scoreboard = np.zeros((19, 19))
+            return
+        else:
+            self.scoreboard = self.parent.scoreboard
+        yx = np.array((self.current_pos))
+        print("yx :", yx)
+        print(k_score)
+        extend_grid = np.pad(self.grid, (4,4), 'constant', constant_values = 0)
+        print("extend_grid:\n", extend_grid)
+        extend_scoreboard = np.pad(self.scoreboard, (2,2), 'constant', constant_values = 0)
+        
+        
+        #extend_scoreboard[yx[0] - 2 : yx[0] + 5, yx[1] : yx[1] + 5] = signal.convolve2d(extend_grid[yx[0] - 2: yx[0] + 7, yx[1] - 2: yx[1] + 7], k_score, "valid")
+        tmp = signal.convolve2d(extend_grid[yx[0] - 2: yx[0] + 7, yx[1] - 2: yx[1] + 7], k_score, "full")
+        print(tmp)
+        self.scoreboard = extend_scoreboard[2:-2, 2:-2]
+        print("score board:\n", self.scoreboard)
 
     # def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
     #     def remove_row(grid: np.ndarray, row: Row):

@@ -91,7 +91,7 @@ class GameUI(MyWindow):
         
         # Initialization of the tree.
         Node.metric = {BLACK: sum_kern3, WHITE: sum_kern3}
-        parent = Node(None, self.grid, BLACK)
+        parent = Node(None, self.grid, BLACK, )
         parent.nb_free_three = 0
         self.node = Node(parent, self.grid, color=-self.stone)
 
@@ -182,7 +182,7 @@ class GameUI(MyWindow):
 
     
     def iscapture_position(self) -> bool:
-        """[summary]
+        """ Verifies if the intended position will perform a capture
         Args:
             yx ([type]): [description]
             grid ([type]): [description]

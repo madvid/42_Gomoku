@@ -2,8 +2,8 @@ from __future__ import annotations
 import numpy as np
 from typing import Tuple
 
-from board import *
-from metrics import *
+from game.board import *
+from game.metrics import *
 
 class Solver():
     def __init__(self, depth: int) -> None:
