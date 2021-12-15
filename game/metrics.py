@@ -222,9 +222,8 @@ def _DEPRECATED_measure_sequence(grid: list, color: int) -> list:
     numba_seqs = measure_sequence_numba(grid, color)
     return [(len_, (start_i, start_j), color, grid) for len_, start_i, start_j in numba_seqs]
 
-
-def _DEPRECATED_measure_sequence_(grid: np.ndarray, color: int) -> list:
 # def measure_sequence(grid: np.ndarray, color: int) -> List[StoneSequence]:
+def _DEPRECATED_measure_sequence_(grid: np.ndarray, color: int) -> list:
     seqs = []
     for i, r in enumerate(grid):
         len_ = 0
@@ -306,18 +305,18 @@ def _DEPRECATED_convert_to_pos(d_pos: Position, i_max: int, left: bool = True) -
 
 
 def get_kern_row_idx(pos: Tuple[int,int]) -> KernelOutput:
-    return [pos[0]] * 5, [range(pos[1], pos[1] + 6)]
+    return [pos[0]] * 5, range(pos[1], pos[1] + 5)
 
 
 def get_kern_col_idx(pos: Tuple[int,int]) -> KernelOutput:
-    return [range(pos[0], pos[0] + 6)], [pos[1]] * 5
+    return range(pos[0], pos[0] + 5), [pos[1]] * 5
 
 
 def get_kern_diag_idx(pos: Tuple[int,int]) -> KernelOutput:
-    return range(pos[0], pos[0] + 6), range(pos[1], pos[1] + 6)
+    return range(pos[0], pos[0] + 5), range(pos[1], pos[1] + 5)
 
 
-@njit(parallel=True, fastmath=True)
+# @njit(parallel=True, fastmath=True)
 def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tuple[int, int]], KernelOutput], seq_type: StoneSequence) -> List[StoneSequence]: # FIXME:  typage 
     """[summary]
 
@@ -334,10 +333,11 @@ def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tup
     i = 0
     while i < stack.shape[0]:
         tmp = np.dot(extend_grid[get_kernel_idx(stack[i])], kernels)
-        tmp = (tmp / np.arange(2, 6)).astype('int8').sum(axis=1) + 1
+        # tmp = (tmp / np.arange(2, 6)).astype('int8').sum(axis=1) + 1
+        tmp = (tmp / np.arange(2, 6)).astype('int8').sum() + 1
         if tmp > 1:
-            res.append(seq_type(lenghth=tmp, position=stack[i]))
-            i += res[-1] - 1
+            res.append(seq_type(length=tmp, position=Position(stack[i][0],stack[i][1]), grid=grid, color=color)) # FIXME: change POSITION class and methods
+            i += res[-1].length - 1
         else:
             i += 1
     
@@ -365,7 +365,7 @@ def collect_sequences(grid: np.ndarray, color: int) -> List[StoneSequence]:
     sequences = []
     sequences.extend(measure_row(grid, color))
     sequences.extend(measure_col(grid, color))
-    sequences.extend(measure_diag(grid, color), True)
+    sequences.extend(measure_diag(grid, color, True))
     sequences.extend(measure_diag(np.fliplr(grid), color, False))
     return sequences
 
