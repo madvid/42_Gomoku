@@ -34,7 +34,7 @@ dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
                  "margin: 0px 0px;}" +
                  "*:hover{background: '#FF6666';}"}
 
-SIZE = 6
+SIZE = 10
 
 
 # =========================================================================== #
@@ -166,80 +166,6 @@ class GameUI(MyWindow):
         return convolved
 
 
-    def check_board(self):
-        """[summary]
-        """
-        ## Checking if white pair captured
-        # Checking the diagonal:
-        conv_diag1 = GameUI._my_conv2D(self.grid, k_diags[0])
-        conv_diag2 = GameUI._my_conv2D(self.grid, k_diags[1])
-        # Checking vertical and horizontal
-        conv_lin1 = GameUI._my_conv2D(self.grid, k_lines[0])
-        conv_lin2 = GameUI._my_conv2D(self.grid, k_lines[1])
-        
-        coord_cd1 = np.argwhere(conv_diag1 == 4)
-        coord_cd2 = np.argwhere(conv_diag2 == 4)
-        coord_cl1 = np.argwhere(conv_lin1 == 4)
-        coord_cl2 = np.argwhere(conv_lin2 == 4)
-        #print("||||||||||||||||||||||||||||")
-        #print("conv_diag1:\n", conv_diag1)
-        #print("conv_diag2:\n", conv_diag2)
-        #print("conv_lin1:\n", conv_lin1)
-        #print("conv_lin2:\n", conv_lin2)
-        #print("|||||||||||||||||||||||||||||")
-
-        if coord_cd1.shape[0] != 0:
-            for coord in coord_cd1:
-                self.grid[coord[0] + 1][coord[1] + 1] = 0
-                self.grid[coord[0] + 2][coord[1] + 2] = 0
-        if coord_cd2.shape[0] != 0:
-            for coord in coord_cd2:
-                self.grid[coord[0] + 1][coord[1] + 2] = 0
-                self.grid[coord[0] + 2][coord[1] + 1] = 0
-        if coord_cl1.shape[0] != 0:
-            for coord in coord_cl1:
-                self.grid[coord[0]][coord[1] + 1] = 0
-                self.grid[coord[0]][coord[1] + 2] = 0
-        if coord_cl2.shape[0] != 0:
-            for coord in coord_cl2:
-                self.grid[coord[0] + 1][coord[1]] = 0
-                self.grid[coord[0] + 2][coord[1]] = 0
-        ## Checking if black pair captured
-        # Checking the diagonal:
-        conv_diag1 = GameUI._my_conv2D(self.grid, -1 * k_diags[0])
-        conv_diag2 = GameUI._my_conv2D(self.grid, -1 * k_diags[1])
-        # Checking vertical and horizontal
-        conv_lin1 = GameUI._my_conv2D(self.grid, -1 * k_lines[0])
-        conv_lin2 = GameUI._my_conv2D(self.grid, -1 * k_lines[1])
-
-        #print("|||||||||||||||||||||||||||||")
-        #print("conv_diag1:\n", conv_diag1)
-        #print("conv_diag2:\n", conv_diag2)
-        #print("conv_lin1:\n", conv_lin1)
-        #print("conv_lin2:\n", conv_lin2)
-        #print("|||||||||||||||||||||||||||||")
-        
-        coord_cd1 = np.argwhere(conv_diag1 == 4)
-        coord_cd2 = np.argwhere(conv_diag2 == 4)
-        coord_cl1 = np.argwhere(conv_lin1 == 4)
-        coord_cl2 = np.argwhere(conv_lin2 == 4)
-        if coord_cd1.shape[0] != 0:
-            for coord in coord_cd1:
-                self.grid[coord[0] + 1][coord[1] + 1] = 0
-                self.grid[coord[0] + 2][coord[1] + 2] = 0
-        if coord_cd2.shape[0] != 0:
-            for coord in coord_cd2:
-                self.grid[coord[0] + 1][coord[1] + 2] = 0
-                self.grid[coord[0] + 2][coord[1] + 1] = 0
-        if coord_cl1.shape[0] != 0:
-            for coord in coord_cl1:
-                self.grid[coord[0]][coord[1] + 1] = 0
-                self.grid[coord[0]][coord[1] + 2] = 0
-        if coord_cl2.shape[0] != 0:
-            for coord in coord_cl2:
-                self.grid[coord[0] + 1][coord[1]] = 0
-                self.grid[coord[0] + 2][coord[1]] = 0
-
     def remove_opponent_pair(self, idx:int):
         yx = self.current_coord
         #explicite coordinates of the stone to remove along each possible direction
@@ -294,12 +220,15 @@ class GameUI(MyWindow):
 
     @staticmethod
     def isbusy(xy, grid) -> bool:
-        """[summary]
+        """ Verifies if the position xy on the board is occupied by a stone
         Args:
-            yx ([type]): [description]
-            grid ([type]): [description]
+        -----
+            yx (np.array([int, int])): coordinates to check.
+            grid (np.array[int (19 x 19)]): Go board
         Returns:
-            bool: [description]
+        --------
+            bool: True if position on board is occupied.
+                  False if not.
         """
         if grid[xy[0]][xy[1]] != 0:
             return True
@@ -308,12 +237,17 @@ class GameUI(MyWindow):
             
     @staticmethod
     def isdoublefreethree_position(yx:np.array, grid:np.array, color:int) -> bool:
-        """[summary]
+        """ Verifies if the position yx on board is a double free three position.
+        A double free three is a position leading to the creation of 2 simultaneous free three.
         Args:
-            yx ([type]): [description]
-            grid ([type]): [description]
+        -----
+            yx (np.array([int, int])): coordinates to check.
+            grid (np.array[int (19 x 19)]): Go board
+            color (int): either 1 or -1.
         Returns:
-            bool: [description]
+        --------
+            bool: True if position on board is occupied.
+                  False if not.
         """
         pad_width = 5
         c = color
