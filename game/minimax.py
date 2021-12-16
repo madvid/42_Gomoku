@@ -40,8 +40,11 @@ class Solver():
 
         if maximizingPlayer:
             value = float('-inf')
-            for child in node.generate_next_moves(node.color):
-                value = max(value, self.minimax_ab(child, depth-1, alpha, beta, False, starting_color))
+            
+            next_moves = node.generate_next_moves(node.color)
+            while len(next_moves) > 0:
+                _, child = next_moves.pop()
+                value = max(value, self.minimax_ab_tt(child, depth-1, alpha, beta, False, starting_color))
                 alpha = max(value, alpha)
                 if alpha >= beta:
                     break
@@ -52,10 +55,13 @@ class Solver():
                     'score': value
                 }
             return value
-
+              
         value = float('inf')
-        for child in node.generate_next_moves(node.color):
-            value = min(value, self.minimax_ab(child, depth-1, alpha, beta, True, starting_color))
+        
+        next_moves = node.generate_next_moves(node.color)
+        while len(next_moves) > 0:
+            _, child = next_moves.pop()
+            value = min(value, self.minimax_ab_tt(child, depth-1, alpha, beta, True, starting_color))
             beta = min(value, beta)
             if alpha >= beta:
                 break
