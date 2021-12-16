@@ -4,12 +4,12 @@ import copy
 from typing import Tuple, List
 
 from game.metrics import *
-from scipy import signal
+from scipy.signal import convolve2d
 from game.rules import iscapture_position
 
 BLACK = 1
 WHITE = -1
-k_score = np.array([[1, 0, 1, 0, 1],
+k_croix = np.array([[1, 0, 1, 0, 1],
                     [0, 1, 1, 1, 0],
                     [1, 1, 1, 1, 1],
                     [0, 1, 1, 1, 0],
@@ -18,15 +18,16 @@ class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric: dict = {} # A dict containing the scoring metrics for black and white
         
-    def __init__(self, parent: Node, grid: np.ndarray, color: int, max_seq_length: int = 0, current_pos:Tuple[int, int] = None) -> None:
+    def __init__(self, parent: Node, grid: np.ndarray, color: int, max_seq_length: int = 0, pos:Tuple[int, int] = None) -> None:
         self.parent = parent
-        self.grid = grid
-        self.current_pos = current_pos
+        self.grid = grid # Should be a 27 x 27 boardgame (i.e a padded one)
+        self.current_pos = pos # Should be the padded current position (true position on real board + (4,4))
         self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
         self.max_seq_length = max_seq_length
-        self.update_score()
+        self.scoreboard = self.init_scoreboard()
+        self.scoreboard[self.color][pos[0] - 2 : pos[0] + 3, pos[1]- 2 :pos[1] + 3] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
     def is_terminal(self):
         return self.max_seq_length >= 5
@@ -37,25 +38,22 @@ class Node():
         max_seq_length = collect_sequences(tmp_grid, color)
         return Node(self, tmp_grid, color * -1, max_seq_length, pos)
 
-    def update_score(self):
-        if self.parent is None or self.current_pos is None:
-            self.scoreboard = np.zeros((19, 19))
-            return
+    def init_scoreboard(self):
+        if self.parent is None:
+            return {WHITE: np.zeros((27,27)), BLACK: np.zeros((27,27))}
         else:
-            self.scoreboard = self.parent.scoreboard
+            return copy.deepcopy(self.parent.scoreboard)
+
+    def update_score(self, k_list, c_list):
+        score = np.zeros((5, 5))
+        for c, k in zip(c_list, k_list):
+            score += self.apply_kern(c * k)
+        return score
+
+    def apply_kern(self, k_score: np.array):
+        tmp = self.grid # it could the opposite color, who knows ... 
         yx = np.array((self.current_pos))
-        print("yx :", yx)
-        print(k_score)
-        extend_grid = np.pad(self.grid, (4,4), 'constant', constant_values = 0)
-        print("extend_grid:\n", extend_grid)
-        extend_scoreboard = np.pad(self.scoreboard, (2,2), 'constant', constant_values = 0)
-        
-        
-        #extend_scoreboard[yx[0] - 2 : yx[0] + 5, yx[1] : yx[1] + 5] = signal.convolve2d(extend_grid[yx[0] - 2: yx[0] + 7, yx[1] - 2: yx[1] + 7], k_score, "valid")
-        tmp = signal.convolve2d(extend_grid[yx[0] - 2: yx[0] + 7, yx[1] - 2: yx[1] + 7], k_score, "full")
-        print(tmp)
-        self.scoreboard = extend_scoreboard[2:-2, 2:-2]
-        print("score board:\n", self.scoreboard)
+        return  convolve2d(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5], k_score, "valid")
 
     # def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
     #     def remove_row(grid: np.ndarray, row: Row):
@@ -97,7 +95,7 @@ class Node():
             [1, 0, 1],
             [1, 1, 1]
         ])
-        mask = (signal.convolve2d(self.grid, kernel / kernel.sum(), mode='same') > 1) & (self.grid == 0)
+        mask = (convolve2d(self.grid, kernel / kernel.sum(), mode='same') > 1) & (self.grid == 0)
         possibles_moves_idx = np.argwhere(mask != 0)
         possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
         for m in possibles_moves:
@@ -185,7 +183,7 @@ def mask2(grid: np.ndarray) -> int:
         [1, 0, 1, 0, 1],
     ]
 )
-    mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+    mask = convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
     return np.sum(mask * grid)
 
 
@@ -201,7 +199,7 @@ def mask3(grid: np.ndarray) -> int:
         [1, 0, 0, 1, 0, 0, 1],
     ]
 )
-    mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+    mask = convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
     return np.sum(mask * grid)
     
 # def mask3(grid: np.ndarray) -> int:
@@ -216,7 +214,7 @@ def mask3(grid: np.ndarray) -> int:
 #         [1, 0, 0, 1, 0, 0, 1],
 #     ]
 # )
-#     mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+#     mask = convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
 #     return np.sum(mask * grid)
 
 
@@ -234,7 +232,7 @@ def mask4(grid: np.ndarray) -> int:
         [1, 0, 0, 0, 1, 0, 0, 0, 1],
     ]
 )
-    mask = signal.convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
+    mask = convolve2d(np.ones(grid.shape), kernel / kernel.sum(), mode='same')
     return np.sum(mask * grid)
 
 
@@ -261,7 +259,7 @@ def kern2(grid: np.ndarray) -> int:
         [1, 0, 1, 0, 1],
     ]
 )
-    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+    return np.sum(convolve2d(grid, kernel / kernel.sum(), mode='same'))
 
 
 def kern3(grid: np.ndarray) -> int:
@@ -276,7 +274,7 @@ def kern3(grid: np.ndarray) -> int:
         [1, 0, 0, 1, 0, 0, 1],
     ]
 )
-    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+    return np.sum(convolve2d(grid, kernel / kernel.sum(), mode='same'))
 
 
 def kern4(grid: np.ndarray) -> int:
@@ -293,7 +291,7 @@ def kern4(grid: np.ndarray) -> int:
         [1, 0, 0, 0, 1, 0, 0, 0, 1],
     ]
 )
-    return np.sum(signal.convolve2d(grid, kernel / kernel.sum(), mode='same'))
+    return np.sum(convolve2d(grid, kernel / kernel.sum(), mode='same'))
 
 def sum_kern2(node: Node) -> int:
     return kern2(node.grid) + longest_line(node)
