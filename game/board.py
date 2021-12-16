@@ -89,7 +89,16 @@ class Node():
 
 
     def generate_next_moves(self, color: int) -> List[Node]:
-        possibles_moves_idx = np.argwhere(self.grid == 0)
+        # possibles_moves_idx = np.argwhere(self.grid == 0)
+        # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
+
+        kernel = np.array([
+            [1, 1, 1],
+            [1, 0, 1],
+            [1, 1, 1]
+        ])
+        mask = (signal.convolve2d(self.grid, kernel / kernel.sum(), mode='same') > 1) & (self.grid == 0)
+        possibles_moves_idx = np.argwhere(mask != 0)
         possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
         for m in possibles_moves:
             
