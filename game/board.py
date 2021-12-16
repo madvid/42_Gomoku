@@ -2,10 +2,11 @@ from __future__ import annotations
 import numpy as np
 import copy
 from typing import Tuple, List
+from heapq import *
 
 from game.metrics import *
 from scipy.signal import convolve2d
-from game.rules import iscapture_position
+from game.rules import iscapture_position, remove_opponent_pair
 
 BLACK = 1
 WHITE = -1
@@ -16,7 +17,7 @@ k_croix = np.array([[1, 0, 1, 0, 1],
                     [1, 0, 1, 0, 1]])
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
-    metric: dict = {} # A dict containing the scoring metrics for black and white
+    metric: dict = {BLACK: max, WHITE: min} # A dict containing the scoring metrics for black and white
         
     def __init__(self, parent: Node, grid: np.ndarray, color: int, max_seq_length: int = 0, pos:Tuple[int, int] = None) -> None:
         self.parent = parent
@@ -27,7 +28,7 @@ class Node():
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
         self.max_seq_length = max_seq_length
         self.scoreboard = self.init_scoreboard()
-        self.scoreboard[self.color][pos[0] - 2 : pos[0] + 3, pos[1]- 2 :pos[1] + 3] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
+        self.scoreboard[self.color][pos[0] : pos[0] + 5, pos[1] :pos[1] + 5] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
     def is_terminal(self):
         return self.max_seq_length[BLACK] >= 5 or self.max_seq_length[WHITE] >= 5
@@ -52,8 +53,12 @@ class Node():
         return score
 
     def apply_kern(self, k_score: np.array):
-        tmp = self.grid # it could the opposite color, who knows ... 
+        if self.current_pos is None:
+            return np.zeros((5, 5))
+        tmp = self.grid # it could the opposite color, who knows ...
         yx = np.array((self.current_pos))
+        print(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5].shape)
+        print(k_score.shape)
         return  convolve2d(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5], k_score, "valid")
 
     # def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
@@ -86,8 +91,7 @@ class Node():
     #         grid = tmp_grid
     #     return grid
 
-
-    def generate_next_moves(self, color: int) -> List[Node]:
+    def _DEPRECATED_generate_next_moves(self, color: int) -> List[Node]:
         # possibles_moves_idx = np.argwhere(self.grid == 0)
         # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
 
@@ -139,13 +143,29 @@ class Node():
             # FIXME: double three are allowed if resulting from a capture!
         return possibles_moves
 
-    def score(self, color: int) -> int:
-        return Node.metric[color](self)
+    def generate_next_moves(self, color: int) -> List[Node]:
+        # possibles_moves_idx = np.argwhere(self.grid == 0)
+        # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
+        
+        mask = self.grid[4:-4, 4:-4] == 0
+        possibles_moves_idx = np.argwhere(mask != 0)
+        possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x,y), color)) for x,y in possibles_moves_idx]
+        
+        for _, m in possibles_moves:
+            # Captured stones
+            pos_to_rm = iscapture_position(m.grid, m.current_pos, m.color)
+            remove_opponent_pair(m.grid, pos_to_rm)
+           
+            # # Double free-three
 
+        heapify(possibles_moves)
+        return possibles_moves
+
+    def score(self, color: int) -> int:
+        return self.metric[color](self.scoreboard[color])
 
     # def score(self, color: int) -> int:
     #     return Node.metric[color](self.grid)
-
 
 
 def stone_sum(grid: np.ndarray) -> int:
