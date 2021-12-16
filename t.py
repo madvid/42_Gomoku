@@ -14,13 +14,13 @@ Node.metric =  {-1: sum_kern3, 1: sum_mask3}
 #     [0,  0,  0,  0, -1, 0]
 #     ])
 
-g = np.zeros((19,19))
-g[9][9] = 1
-parent = Node(None, g, 1)
-parent.nb_free_three = 0
+g = np.zeros((27,27))
+sb = np.zeros((27,27))
+g[13][13] = 1
+parent = Node(None, g, 1, pos = (5,5))
 
 color = -1
-node = Node(parent, g, color)
+node = Node(parent, g, color, pos = (13,13))
 solver = Solver(10)
 
 print(solver.find_best_move(node))
