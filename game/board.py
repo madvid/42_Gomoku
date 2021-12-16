@@ -30,13 +30,14 @@ class Node():
         self.scoreboard[self.color][pos[0] - 2 : pos[0] + 3, pos[1]- 2 :pos[1] + 3] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
     def is_terminal(self):
-        return self.max_seq_length >= 5
+        return self.max_seq_length[BLACK] >= 5 or self.max_seq_length[WHITE] >= 5
 
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
         tmp_grid[pos] = color
-        max_seq_length = collect_sequences(tmp_grid, color)
-        return Node(self, tmp_grid, color * -1, max_seq_length, pos)
+        black_max_seq_length = collect_sequences(tmp_grid, BLACK)
+        white_max_seq_length = collect_sequences(tmp_grid, WHITE)
+        return Node(self, tmp_grid, color * -1, {BLACK: black_max_seq_length, WHITE: white_max_seq_length}, pos)
 
     def init_scoreboard(self):
         if self.parent is None:
@@ -90,22 +91,30 @@ class Node():
         # possibles_moves_idx = np.argwhere(self.grid == 0)
         # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
 
+        # kernel = np.array([
+        #     [1, 1, 1],
+        #     [1, 0, 1],
+        #     [1, 1, 1]
+        # ])
+
         kernel = np.array([
-            [1, 1, 1],
-            [1, 0, 1],
-            [1, 1, 1]
+            [1, 0, 1, 0, 1],
+            [0, 1, 1, 1, 0],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 0],
+            [1, 0, 1, 0, 1]
         ])
         mask = (convolve2d(self.grid, kernel / kernel.sum(), mode='same') > 1) & (self.grid == 0)
         possibles_moves_idx = np.argwhere(mask != 0)
         possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
+        # print(possibles_moves)
         for m in possibles_moves:
             
-
             # m.stone_seq[BLACK] = collect_sequences(m.grid, BLACK)
             # m.stone_seq[WHITE] = collect_sequences(m.grid, WHITE)
             # stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
             # Captured stones
-            iscapture_position(m.grid, m.last_coord, m.color)
+            iscapture_position(m.grid, m.current_pos, m.color)
             # captured_black_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK])
             # captured_white_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[WHITE])
             # captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK] + m.stone_seq[WHITE])
@@ -145,9 +154,10 @@ def stone_sum(grid: np.ndarray) -> int:
 
 def longest_line(node: Node) -> int:
     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
-    black_max = max([n.length for n in node.stone_seq[BLACK]]) if node.stone_seq[BLACK] != [] else 0
-    white_max = max([n.length for n in node.stone_seq[WHITE]]) if node.stone_seq[WHITE] != [] else 0
-    return black_max - white_max
+    # black_max = max([n.length for n in node.stone_seq[BLACK]]) if node.stone_seq[BLACK] != [] else 0
+    # white_max = max([n.length for n in node.stone_seq[WHITE]]) if node.stone_seq[WHITE] != [] else 0
+    print(f"longuest line: {node.max_seq_length[BLACK] - node.max_seq_length[WHITE]}")
+    return node.max_seq_length[BLACK] - node.max_seq_length[WHITE]
 
 # def longest_line(grid: np.ndarray) -> int:
 #     # Returns the difference between the longest black and white lines of stones. The bigger the better. 
