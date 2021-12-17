@@ -57,8 +57,6 @@ class Node():
             return np.zeros((5, 5))
         tmp = self.grid # it could the opposite color, who knows ...
         yx = np.array((self.current_pos))
-        print(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5].shape)
-        print(k_score.shape)
         return  convolve2d(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5], k_score, "valid")
 
     # def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
@@ -149,7 +147,8 @@ class Node():
         
         mask = self.grid[4:-4, 4:-4] == 0
         possibles_moves_idx = np.argwhere(mask != 0)
-        possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x,y), color)) for x,y in possibles_moves_idx]
+        # We add +4 to the following x and y due to the fact the grid is padded 
+        possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x + 4,y + 4), color)) for x,y in possibles_moves_idx]
         
         for _, m in possibles_moves:
             # Captured stones
@@ -166,6 +165,13 @@ class Node():
 
     # def score(self, color: int) -> int:
     #     return Node.metric[color](self.grid)
+    
+    def __lt__(self, other):
+        return abs(self.scoreboard[self.].sum()) * self.color < abs(other.scoreboard[self.].sum()) * other.color
+
+
+    def __gt__(self, other):
+        return abs(self.scoreboard.sum()) * self.color > abs(other.scoreboard.sum()) * other.color
 
 
 def stone_sum(grid: np.ndarray) -> int:
