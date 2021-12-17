@@ -161,7 +161,7 @@ class MyWindow(QWidget):
 		self.setStyleSheet("background: #152338;")
 
 		# Widgets which matter for the update of the board (np.array)
-		self.stone = WHITE # 1 is white and -1 is black
+		self.stone = BLACK # 1 is black and -1 is white
 		self.W_whitestones = []
 		self.W_blackstones = []
 
