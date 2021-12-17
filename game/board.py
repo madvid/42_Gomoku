@@ -28,21 +28,33 @@ class Node():
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
         self.max_seq_length = max_seq_length # FIXME: REMOVE ME
         self.scoreboard = self.init_scoreboard()
-        self.scoreboard[self.color][pos[0] : pos[0] + 5, pos[1] :pos[1] + 5] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
+        print(f"color = {self.color} -- scoreboard.shape = {self.scoreboard[self.color].shape} -- grid.shape = {self.grid.shape}")
+        print(self.scoreboard[self.color])
+        self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
+        """Evaluates if the node is a terminal one, meaning the conditions of victory are met.
+        Victory of a player is when:
+            * the player has a sequence of 5 stones,
+            * None of the stones among the sequence of 5 can be captured.
+
+        Returns:
+            bool: True -> game finished
+                  Fasle -> game not finished yet
+        """
         return False # FIXME: self.max_seq_length[BLACK] >= 5 or self.max_seq_length[WHITE] >= 5
 
-    def update(self, pos: Tuple[int,int], color: int) -> Node:
+    def update(self, pos: Tuple[int,int], adv_color: int) -> Node:
+        
         tmp_grid = np.copy(self.grid)
-        tmp_grid[pos] = color
+        tmp_grid[pos] = adv_color
         black_max_seq_length = collect_sequences(tmp_grid, BLACK)
         white_max_seq_length = collect_sequences(tmp_grid, WHITE)
-        return Node(self, tmp_grid, color * -1, {BLACK: black_max_seq_length, WHITE: white_max_seq_length}, pos)
+        return Node(self, tmp_grid, adv_color, {BLACK: black_max_seq_length, WHITE: white_max_seq_length}, pos)
 
     def init_scoreboard(self):
         if self.parent is None:
-            return {WHITE: convolve2d(self.grid, k_croix, "valid"), BLACK: convolve2d(self.grid, k_croix, "valid")}
+            return {WHITE: convolve2d(self.grid, k_croix, "same"), BLACK: convolve2d(self.grid, k_croix, "same")}
         else:
             return copy.deepcopy(self.parent.scoreboard)
 
@@ -60,6 +72,8 @@ class Node():
             return np.zeros((5, 5))
         tmp = self.grid # it could the opposite color, who knows ...
         yx = np.array((self.current_pos))
+        print(f"yx = {yx}")
+        print("sub view tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5]:\n",tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5])
         return  convolve2d(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5], k_score, "valid")
 
     # def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
@@ -144,7 +158,7 @@ class Node():
             # FIXME: double three are allowed if resulting from a capture!
         return possibles_moves
 
-    def generate_next_moves(self, color: int) -> List[Node]:
+    def generate_next_moves(self) -> List[Node]:
         # possibles_moves_idx = np.argwhere(self.grid == 0)
         # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
 
@@ -168,7 +182,7 @@ class Node():
         # mask = self.grid[4:-4, 4:-4] == 0
         # possibles_moves_idx = np.argwhere(mask)
         # We add +4 to the following x and y due to the fact the grid is padded 
-        possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x + 4,y + 4), color)) for x,y in possibles_moves_idx]
+        possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x + 4,y + 4), -self.color)) for x,y in possibles_moves_idx]
         
         for _, m in possibles_moves:
             # Captured stones
@@ -181,8 +195,8 @@ class Node():
         heapify(possibles_moves)
         return possibles_moves
 
-    def score(self, color: int) -> int:
-        return self.scoreboard[color][self.current_pos]
+    def score(self) -> int:
+        return self.scoreboard[self.color][self.current_pos]
         # return self.metric[color](self.scoreboard[color]) + self.metric[-color](self.scoreboard[-color])
 
     # def score(self, color: int) -> int:
