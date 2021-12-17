@@ -17,7 +17,7 @@ k_croix = np.array([[1, 0, 1, 0, 1],
                     [1, 0, 1, 0, 1]])
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
-    metric: dict = {BLACK: max, WHITE: min} # A dict containing the scoring metrics for black and white
+    metric: dict = {BLACK: np.max, WHITE: np.min} # A dict containing the scoring metrics for black and white
         
     def __init__(self, parent: Node, grid: np.ndarray, color: int, max_seq_length: int = 0, pos:Tuple[int, int] = None) -> None:
         self.parent = parent
@@ -26,12 +26,12 @@ class Node():
         self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
-        self.max_seq_length = max_seq_length
+        self.max_seq_length = max_seq_length # FIXME: REMOVE ME
         self.scoreboard = self.init_scoreboard()
         self.scoreboard[self.color][pos[0] : pos[0] + 5, pos[1] :pos[1] + 5] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
     def is_terminal(self):
-        return self.max_seq_length[BLACK] >= 5 or self.max_seq_length[WHITE] >= 5
+        return False # FIXME: self.max_seq_length[BLACK] >= 5 or self.max_seq_length[WHITE] >= 5
 
     def update(self, pos: Tuple[int,int], color: int) -> Node:
         tmp_grid = np.copy(self.grid)
@@ -42,13 +42,16 @@ class Node():
 
     def init_scoreboard(self):
         if self.parent is None:
-            return {WHITE: np.zeros((27,27)), BLACK: np.zeros((27,27))}
+            return {WHITE: convolve2d(self.grid, k_croix, "valid"), BLACK: convolve2d(self.grid, k_croix, "valid")}
         else:
             return copy.deepcopy(self.parent.scoreboard)
 
     def update_score(self, k_list, c_list):
         score = np.zeros((5, 5))
         for c, k in zip(c_list, k_list):
+            tmp = self.apply_kern(c * k)
+            print(f"k.shape = {k.shape}")
+            print(f"score.shape = {score.shape}")
             score += self.apply_kern(c * k)
         return score
 
@@ -93,19 +96,19 @@ class Node():
         # possibles_moves_idx = np.argwhere(self.grid == 0)
         # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
 
-        # kernel = np.array([
-        #     [1, 1, 1],
-        #     [1, 0, 1],
-        #     [1, 1, 1]
-        # ])
-
         kernel = np.array([
-            [1, 0, 1, 0, 1],
-            [0, 1, 1, 1, 0],
-            [1, 1, 1, 1, 1],
-            [0, 1, 1, 1, 0],
-            [1, 0, 1, 0, 1]
+            [1, 1, 1],
+            [1, 0, 1],
+            [1, 1, 1]
         ])
+
+        # kernel = np.array([
+        #     [1, 0, 1, 0, 1],
+        #     [0, 1, 1, 1, 0],
+        #     [1, 1, 1, 1, 1],
+        #     [0, 1, 1, 1, 0],
+        #     [1, 0, 1, 0, 1]
+        # ])
         mask = (convolve2d(self.grid, kernel / kernel.sum(), mode='same') > 1) & (self.grid == 0)
         possibles_moves_idx = np.argwhere(mask != 0)
         possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
@@ -144,9 +147,26 @@ class Node():
     def generate_next_moves(self, color: int) -> List[Node]:
         # possibles_moves_idx = np.argwhere(self.grid == 0)
         # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
-        
-        mask = self.grid[4:-4, 4:-4] == 0
+
+        kernel = np.array([
+            [1, 0, 1, 0, 1],
+            [0, 1, 1, 1, 0],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 0],
+            [1, 0, 1, 0, 1]
+        ])
+
+        # kernel = np.array([
+        #     [1, 1, 1],
+        #     [1, 0, 1],
+        #     [1, 1, 1]
+        # ])
+        mask = (convolve2d(self.grid[4:-4, 4:-4], kernel, mode='same') >= 1) & (self.grid[4:-4, 4:-4] == 0)
         possibles_moves_idx = np.argwhere(mask != 0)
+
+        
+        # mask = self.grid[4:-4, 4:-4] == 0
+        # possibles_moves_idx = np.argwhere(mask)
         # We add +4 to the following x and y due to the fact the grid is padded 
         possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x + 4,y + 4), color)) for x,y in possibles_moves_idx]
         
@@ -157,17 +177,19 @@ class Node():
            
             # # Double free-three
 
+        # print(f"len possible moves: {len(possibles_moves)}")
         heapify(possibles_moves)
         return possibles_moves
 
     def score(self, color: int) -> int:
-        return self.metric[color](self.scoreboard[color])
+        return self.scoreboard[color][self.current_pos]
+        # return self.metric[color](self.scoreboard[color]) + self.metric[-color](self.scoreboard[-color])
 
     # def score(self, color: int) -> int:
     #     return Node.metric[color](self.grid)
     
     def __lt__(self, other):
-        return abs(self.scoreboard[self.].sum()) * self.color < abs(other.scoreboard[self.].sum()) * other.color
+        return (abs(self.scoreboard[self.color].sum()) * self.color) < (abs(other.scoreboard[other.color].sum()) * other.color)
 
 
     def __gt__(self, other):

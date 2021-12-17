@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from typing import Tuple
+import time
 
 from game.board import *
 from game.metrics import *
@@ -25,17 +26,22 @@ class Solver():
             value = min(value, self.minimax(child, depth-1, True))
             return value
     
-
     def minimax_ab_tt(self, node: Node, depth: int, alpha:int, beta:int, maximizingPlayer: bool, starting_color: int) -> int:
+        # print(f"minimax | depth = {depth}")
+        t1 = time.time()
         hash_ = node.grid.data.tobytes()
         if hash_ in self.TTtable.keys() and starting_color in self.TTtable[hash_].keys():
             if self.TTtable[hash_][starting_color]['depth'] >= depth:
+                t2 = time.time()
+                # print(f"minimax time = {t2 - t1} | depth = {depth}")
                 return self.TTtable[hash_][starting_color]['score']        
         
         hash_lst = [hash_, np.rot90(node.grid).data.tobytes(), np.rot90(node.grid, 2).data.tobytes(), 
                         np.flipud(node.grid).data.tobytes(), np.fliplr(node.grid).data.tobytes()]
 
         if depth == 0 or node.is_terminal():
+            t2 = time.time()
+            # print(f"minimax time = {t2 - t1} | depth = {depth}")
             return node.score(starting_color)
 
         if maximizingPlayer:
@@ -54,6 +60,9 @@ class Solver():
                     'depth': depth,
                     'score': value
                 }
+        
+            t2 = time.time()
+            # print(f"minimax time = {t2 - t1} | depth = {depth}")
             return value
               
         value = float('inf')
@@ -71,6 +80,9 @@ class Solver():
                     'depth': depth,
                     'score': value
                 }
+
+        t2 = time.time()
+        # print(f"minimax time = {t2 - t1} | depth = {depth}")
         return value
 
     def minimax_ab(self, node: Node, depth: int, alpha:int, beta:int, maximizingPlayer: bool, starting_color: int) -> int:
@@ -116,8 +128,14 @@ class Solver():
         return value
 
     def find_best_move(self, current_state: Node) -> Node:
+        # print("find best move")
+        t1 = time.time()
+        nxt = current_state.generate_next_moves(current_state.color)
+        t2 = time.time()
+        
+        # print(f"next moves len = {len(nxt)} ({t2 -t1} s)")
         # next_moves = [(self.negamax_ab(n, self.depth, current_state.color * -1, float('-inf'), float('inf'), current_state.color * -1), n ) for n in current_state.generate_next_moves(current_state.color)]
-        next_moves = [(self.minimax_ab_tt(n, self.depth, current_state.color == -1, float('-inf'), float('inf'), current_state.color * -1), n ) for n in current_state.generate_next_moves(current_state.color)]
+        next_moves = [(self.minimax_ab_tt(n, self.depth, current_state.color == -1, float('-inf'), float('inf'), current_state.color * -1), n ) for _, n in nxt]
         
         if len(next_moves) != 0:
             if current_state.color == 1:
