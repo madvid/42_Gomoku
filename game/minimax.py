@@ -129,21 +129,31 @@ class Solver():
 
     def find_best_move(self, current_state: Node) -> Node:
         # print("find best move")
-        t1 = time.time()
+        #t1 = time.time()
         nxt = current_state.generate_next_moves()
-        t2 = time.time()
+        #t2 = time.time()
         
-        # print(f"next moves len = {len(nxt)} ({t2 -t1} s)")
+        #print(f"next moves len = {len(nxt)} ({t2 -t1} s)")
         
         # minimax will maximize the score for the Black player and minimize the score for the White player.
         #next_moves = [(self.minimax_ab_tt(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK, n.color * -1), n ) for _, n in nxt]
-        next_moves = [(self.minimax_ab(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK), n ) for _, n in nxt]
         
-        next_moves = (self.minimax_ab(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK), n ) for _, n in nxt]
+        #next_moves = [(self.minimax(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK)) for _, n in nxt]
+        next_moves = [self.minimax_ab(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK) for n in nxt]
+        #next_moves = [(self.minimax_ab_tt(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK), n) for _, n in nxt]
         
+        print(next_moves)
         if len(next_moves) != 0:
             if current_state.color == BLACK:
-                return max(next_moves, key= lambda x: x[0])[1]
+                max_score = max(next_moves)
+                print("max_score = ", max_score)
+                print("where next_moves == max_score = ", np.argwhere(np.array(next_moves) == max_score)[0])
+                print("Best nodes = ", nxt[np.argwhere(np.array(next_moves) == max_score)[0][0]])
+                return nxt[np.argwhere(np.array(next_moves) == max_score)[0][0]]
             else:
-                return min(next_moves, key= lambda x: x[0])[1]
+                min_score = min(next_moves)
+                print("min_score = ", min_score)
+                print("where next_moves == min_score = ", np.argwhere(np.array(next_moves) == min_score)[0])
+                print("Best nodes = ", nxt[np.argwhere(np.array(next_moves) == min_score)[0][0]])
+                return nxt[np.argwhere(np.array(next_moves) == min_score)[0][0]]
 
