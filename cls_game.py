@@ -17,6 +17,7 @@ from interface.game_interface import MyWindow, nearest_coord, stone_to_board, as
 from game.minimax import Solver
 from game.board import Node, sum_kern3, sum_kern4
 from game.history import History
+from game.rules import iscapture_position, remove_opponent_pair
 
 
 # =========================================================================== #
@@ -34,7 +35,7 @@ dct_stylesheet ={"cancel_btn": "*{border: 0px solid '#FFCCCC';" +
                  "margin: 0px 0px;}" +
                  "*:hover{background: '#FF6666';}"}
 
-SIZE = 10
+SIZE = 19
 
 
 # =========================================================================== #
@@ -78,7 +79,6 @@ class GameUI(MyWindow):
     def __init__(self, gmode:int):
         super(GameUI, self).__init__()
         # Board creation and player related attributes
-        self.grid = np.zeros((SIZE,SIZE), dtype=np.int8)
         self.W_whitestones = []
         self.W_blackstones = []
         self.coord_whitestones = []
@@ -91,12 +91,13 @@ class GameUI(MyWindow):
         
         # Initialization of the tree.
         Node.metric = {BLACK: sum_kern3, WHITE: sum_kern3}
-        parent = Node(None, self.grid, BLACK, )
-        parent.nb_free_three = 0
-        self.node = Node(parent, self.grid, color=-self.stone)
+        self.node = Node(None, np.zeros((SIZE + 8,SIZE + 8), dtype=np.int8), WHITE)
+        self.node.nb_free_three = 0
 
         self.i_round = 0
         self.history = History()
+        self.history.add_nodes([self.node])
+        
 
         
     def game_backward(self):
@@ -129,7 +130,7 @@ class GameUI(MyWindow):
         
 
     @staticmethod
-    def _subboard_4_Conv2D(grid, k_shape:tuple, stride:tuple) -> np.array:
+    def _DEPRECATED_subboard_4_Conv2D(grid, k_shape:tuple, stride:tuple) -> np.array:
         """ Generates the sub view of the grid to be multiply with the kernel.
         First the shape of the sub_grid array is calculated, it depends on
         the grid shape and the kernel shape.
@@ -150,7 +151,7 @@ class GameUI(MyWindow):
 
 
     @staticmethod
-    def _my_conv2D(grid, kernel:np.array) -> np.array:
+    def _DEPRECATED_my_conv2D(grid, kernel:np.array) -> np.array:
         """ Retrieves the sub_grid from the function _subboard_4_Conv2D and performs
         the convolution (array multiplication + einstein sum along the 3rd and 4th
         dimensions).
@@ -164,58 +165,6 @@ class GameUI(MyWindow):
         print("res_conv = \n", res_conv)
         convolved = np.einsum('ijkl->ij', res_conv)
         return convolved
-
-
-    def remove_opponent_pair(self, idx:int):
-        yx = self.current_coord
-        #explicite coordinates of the stone to remove along each possible direction
-        # from the stone just played
-        stone_to_del = ((yx[0] + np.array([-2, -1]), yx[1] + np.array([0, 0])),
-                        (yx[0] + np.array([1, 2]), yx[1] + np.array([0, 0])),
-                        (yx[0] + np.array([0, 0]), yx[1] + np.array([-2, -1])),
-                        (yx[0] + np.array([0, 0]), yx[1] + np.array([1, 2])),
-                        (yx[0] + np.array([-2, -1]), yx[1] + np.array([-2, -1])),
-                        (yx[0] + np.array([-2, -1]), yx[1] + np.array([2, 1])),
-                        (yx[0] + np.array([2, 1]), yx[1] + np.array([-2, -1])),
-                        (yx[0] + np.array([1, 2]), yx[1] + np.array([1, 2])))
-        self.grid[stone_to_del[idx]] = 0
-
-    
-    def iscapture_position(self) -> bool:
-        """ Verifies if the intended position will perform a capture
-        Args:
-            yx ([type]): [description]
-            grid ([type]): [description]
-        Returns:
-            bool: [description]
-        """
-        global TOT
-        yx = self.current_coord
-        c = self.stone
-        
-        pad_width = 3
-        extend_grid = np.pad(self.grid, (pad_width), "constant", constant_values = (0))
-        extend_grid[yx[0] + pad_width, yx[1] + pad_width] = c
-        
-        r_conv_c1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 4], c * k_captures['column']))
-        r_conv_c2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 4], c * k_captures['column']))
-        
-        r_conv_l1 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1]:yx[1] + 4], c * k_captures['line']))
-        r_conv_l2 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0]+4, yx[1] + 3:yx[1] + 7], c * k_captures['line']))
-        
-        r_conv_d1 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1]:yx[1] + 4], c * k_captures['diag1']))
-        r_conv_d2 = np.sum(np.multiply(extend_grid[yx[0]:yx[0] + 4, yx[1] + 3:yx[1] + 7], c * k_captures['diag2']))
-        r_conv_d3 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1]:yx[1] + 4], c * k_captures['diag2']))
-        r_conv_d4 = np.sum(np.multiply(extend_grid[yx[0] + 3:yx[0] + 7, yx[1] + 3:yx[1] + 7], c * k_captures['diag1']))
-        res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
-        
-        TOT = TOT + 1
-        for ii, r_conv in enumerate(res):
-            if (r_conv == 4):
-                self.remove_opponent_pair(ii)
-        if any([r == 4 for r in res]):
-            return True
-        return False
 
 
     @staticmethod
@@ -277,37 +226,36 @@ class GameUI(MyWindow):
         --------
             (bool): boolean traducing if position is available.
         """
-        if self.isbusy(self.current_coord, self.grid):
+        if self.isbusy(self.current_coord + 4, self.node.grid[4:-4, 4:-4]):
             print("position is not available.")
             return False
-        if self.isdoublefreethree_position(self.current_coord, self.grid, self.stone):
+        if self.isdoublefreethree_position(self.current_coord, self.node.grid[4 : -4, 4 : -4], self.stone):
             print("position is not available: double free three not allows.")
             return False
         return True
         
 
-    def placing_stone(self, event):
-        """Creates and move and display the widget corresponding to the new
-            stone (white/black) according to the coordinates in event (when
-            clicking or when the algorithm is playing).
-            The new stone is appended in the list of whitestone/blackstone
-            widgets representing all the existing stones on the board.
-        Args:
-        -----
-            event (QtGui.QMouseEvent): coordinates of mouse cursor.
-            color (int): 1 == white and -1 == black
+    def create_node(self):
+        """Creates a new node based on the position on board where player clicked.
         """
-        if isinstance(event, QtGui.QMouseEvent):
-            nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-            coord = stone_to_board(nearest, self.stone, self.grid)
-            self.grid[coord[0], coord[1]] = self.stone
+        # retrieving the grid of the parent node
+        grid = np.copy(self.node.grid)
+        
+        # Updating the new grid: placing stone and checking if there are captures.
+        grid[self.current_coord[0] + 4, self.current_coord[1] + 4] = self.stone
+        stones_to_rm = iscapture_position(grid, self.current_coord + 4, self.stone) # +4 due to the padding of the grid
+        remove_opponent_pair(grid, stones_to_rm)
+        # Child node creation
+        node = Node(self.node, grid, self.stone, 0, self.current_coord + 4) # FIXME: 0 is for the longest sequence, it will be remove when refactoring Node class
+
+        return node
 
 
     def UiGenBoard(self):
         """
         """
-        self.coord_blackstones= np.argwhere(self.grid == BLACK)
-        self.coord_whitestones = np.argwhere(self.grid == WHITE)
+        self.coord_blackstones= np.argwhere(self.node.grid[4 : -4, 4 : -4] == BLACK)
+        self.coord_whitestones = np.argwhere(self.node.grid[4 : -4, 4 : -4] == WHITE)
         
         for bs in self.coord_blackstones:
             stone = QLabel("", self.wdgts_UI3["board"])
@@ -365,31 +313,28 @@ class GameUI(MyWindow):
             if history.i_current + 1 != history.tot_nodes:
                 return False
             return True
-
         if (self.Stack.currentIndex() == 2) \
             and on_board(event.pos()) \
                 and (event.buttons() == QtCore.Qt.LeftButton) \
                     and iscurrentstate(self.history):
-            
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
                 return
-            self.placing_stone(event)
-            self.iscapture_position()
+            
+            self.node = self.create_node()
+            self.history.add_nodes([self.node])
+            # Changing self.stone color and incrementing round_counter
+            self.stone = -self.stone
             self.i_round += 1
+
             self.UiDestroyBoard()
             self.UiGenBoard()
-
-            self.node = Node(self.node, self.grid, color=-self.stone)
-            self.history.add_nodes([self.node])
-            self.stone = self.node.color
 
             self.node = self.agent.find_best_move(self.node)
             if self.node != None:
                 self.history.add_nodes([self.node])
-                self.grid = self.node.grid
-
+                # Changing self.stone color and incrementing round_counter
+                self.stone = -self.stone
+                self.i_round += 1
                 self.UiDestroyBoard()
                 self.UiGenBoard()
-                self.i_round += 1
-                self.stone *= -1
