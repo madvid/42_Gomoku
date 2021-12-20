@@ -35,15 +35,15 @@ kernels = np.array([[1, 1, 1, 1],
 #                          | Functions definition |                           #
 # =========================================================================== #
 
-def get_kern_row_idx(pos: Tuple[int,int], length: int = 5) -> KernelOutput:
+def get_kern_row_idx(pos: Tuple[int,int], direction: int = 1, length: int = 5) -> KernelOutput:
     return [pos[0]] * length, range(pos[1], pos[1] + length)
 
 
-def get_kern_col_idx(pos: Tuple[int,int], length: int = 5) -> KernelOutput:
+def get_kern_col_idx(pos: Tuple[int,int], direction: int = 1, length: int = 5) -> KernelOutput:
     return range(pos[0], pos[0] + length), [pos[1]] * length
 
 
-def get_kern_diag_idx(pos: Tuple[int,int], length: int = 5) -> KernelOutput:
+def get_kern_diag_idx(pos: Tuple[int,int], direction:Tuple(int, int) = 1, length: int = 5) -> KernelOutput:
     return range(pos[0], pos[0] + length), range(pos[1], pos[1] + length)
 
 
