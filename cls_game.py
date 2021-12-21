@@ -243,8 +243,6 @@ class GameUI(MyWindow):
         
         # Updating the new grid: placing stone and checking if there are captures.
         grid[self.current_coord[0] + 4, self.current_coord[1] + 4] = self.stone
-        stones_to_rm = iscapture_position(grid, self.current_coord + 4, self.stone) # +4 due to the padding of the grid
-        remove_opponent_pair(grid, stones_to_rm)
         # Child node creation
         node = Node(self.node, grid, self.stone, self.current_coord + 4)
 
@@ -329,7 +327,6 @@ class GameUI(MyWindow):
 
             self.UiDestroyBoard()
             self.UiGenBoard()
-
             self.node = self.agent.find_best_move(self.node)
             if self.node != None:
                 self.history.add_nodes([self.node])

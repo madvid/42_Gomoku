@@ -7,6 +7,7 @@ from heapq import *
 from game.metrics import *
 from scipy.signal import convolve2d
 from game.rules import iscapture_position, remove_opponent_pair
+np.set_printoptions(linewidth = 200)
 
 BLACK = 1
 WHITE = -1
@@ -15,6 +16,18 @@ k_croix = np.array([[1, 0, 1, 0, 1],
                     [1, 1, 1, 1, 1],
                     [0, 1, 1, 1, 0],
                     [1, 0, 1, 0, 1]])
+
+k_little_square = np.array([[0, 0, 0, 0, 0],
+                            [0, 1, 1, 1, 0],
+                            [0, 1, 1, 1, 0],
+                            [0, 1, 1, 1, 0],
+                            [0, 0, 0, 0, 0]])
+
+k_nxt_opponent = np.array([[0,  0,  0,  0, 0],
+                           [0, -1, -1, -1, 0],
+                           [0, -1,  0, -1, 0],
+                           [0, -1, -1, -1, 0],
+                           [0,  0,  0,  0, 0]])
 
 k_5_stones = np.array([1, 1, 1, 1, 1])
 
@@ -33,13 +46,13 @@ class Node():
         self.scoreboard = self.init_scoreboard()
 
         if not pos is None:
-            self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
+            self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([self.color * k_nxt_opponent], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
-        ########################################################################
-        # FIXME: should the code below be put in a dedicated func?
-        pos_to_rm = iscapture_position(self.grid, self.current_pos, self.color)
-        remove_opponent_pair(self.grid, pos_to_rm)
-        ########################################################################
+            ########################################################################
+            # FIXME: should the code below be put in a dedicated func?
+            pos_to_rm = iscapture_position(self.grid, self.current_pos, self.color)
+            remove_opponent_pair(self.grid, pos_to_rm)
+            ########################################################################
 
 
     def is_terminal(self) -> bool:
@@ -84,9 +97,6 @@ class Node():
     def update_score(self, k_list, c_list):
         score = np.zeros((5, 5))
         for c, k in zip(c_list, k_list):
-            tmp = self.apply_kern(c * k)
-            #print(f"k.shape = {k.shape}")
-            #print(f"score.shape = {score.shape}")
             score += self.apply_kern(c * k)
         self.isterminal = self.is_terminal()
         if self.isterminal:
@@ -94,7 +104,7 @@ class Node():
         return score
     
     def score(self):
-        return self.scoreboard[self.color].max()
+        return self.scoreboard[self.color][4:-4,4:-4].sum() + self.scoreboard[self.color][4:-4,4:-4].max()
 
     def apply_kern(self, k_score: np.array):
         if self.current_pos is None:
@@ -135,68 +145,17 @@ class Node():
     #         grid = tmp_grid
     #     return grid
 
-    def _DEPRECATED_generate_next_moves(self, color: int) -> List[Node]:
-        # possibles_moves_idx = np.argwhere(self.grid == 0)
-        # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
-
-        kernel = np.array([
-            [1, 1, 1],
-            [1, 0, 1],
-            [1, 1, 1]
-        ])
-
-        # kernel = np.array([
-        #     [1, 0, 1, 0, 1],
-        #     [0, 1, 1, 1, 0],
-        #     [1, 1, 1, 1, 1],
-        #     [0, 1, 1, 1, 0],
-        #     [1, 0, 1, 0, 1]
-        # ])
-        mask = (convolve2d(self.grid, kernel / kernel.sum(), mode='same') > 1) & (self.grid == 0)
-        possibles_moves_idx = np.argwhere(mask != 0)
-        possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
-        # print(possibles_moves)
-        for m in possibles_moves:
-            
-            # m.stone_seq[BLACK] = collect_sequences(m.grid, BLACK)
-            # m.stone_seq[WHITE] = collect_sequences(m.grid, WHITE)
-            # stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
-            # Captured stones
-            iscapture_position(m.grid, m.current_pos, m.color)
-            # captured_black_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK])
-            # captured_white_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[WHITE])
-            # captured_stones = filter(lambda x: x.length == 2 and x.is_surrounded(), m.stone_seq[BLACK] + m.stone_seq[WHITE])
-            # print(f"captured = {captured_stones[0].grid}")
-            # m.grid = self.remove_sequences(m.grid, captured_black_stones)
-            # m.grid = self.remove_sequences(m.grid, captured_white_stones)
-            # m.stone_seq[BLACK] = [s for s in m.stone_seq[BLACK] if not (s.length == 2 and s.is_surrounded())]
-            # m.stone_seq[WHITE] = [s for s in m.stone_seq[WHITE] if not (s.length == 2 and s.is_surrounded())]
-
-            # # Double free-three
-            # cleared_stone_seq: List[StoneSequence] = collect_sequences(m.grid, BLACK) + collect_sequences(m.grid, WHITE)
-            # m.nb_free_three = len(list(filter(lambda x: x.is_a_free_three(), cleared_stone_seq)))
-            # # FIXME: double-three share a common stone!
-
-            # print(m.parent)
-            # print(m.nb_free_three)
-            # print(self.parent.nb_free_three)
-         
-            # if m.nb_free_three == self.parent.nb_free_three + 2:
-            #     possibles_moves.remove(m)
-
-            # FIXME: double three are allowed if resulting from a capture!
-        return possibles_moves
 
     def generate_next_moves(self) -> List[Node]:
         # possibles_moves_idx = np.argwhere(self.grid == 0)
         # possibles_moves = [self.update((x,y), color) for x,y in possibles_moves_idx]
 
         kernel = np.array([
-            [1, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0],
-            [1, 1, 1, 1, 1],
             [0, 1, 1, 1, 0],
-            [1, 0, 1, 0, 1]
+            [0, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0]
         ])
 
         # kernel = np.array([

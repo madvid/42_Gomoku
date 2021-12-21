@@ -36,15 +36,15 @@ kernels = np.array([[1, 1, 1, 1],
 # =========================================================================== #
 
 def get_kern_row_idx(pos: Tuple[int,int], direction: int = 1, length: int = 5) -> KernelOutput:
-    return [pos[0]] * length, range(pos[1], pos[1] + direction * length, direction)
+    return pos[0] * np.ones(length, dtype = 'int8'), np.arange(pos[1], pos[1] + direction * length, direction)
 
 
 def get_kern_col_idx(pos: Tuple[int,int], direction: int = 1, length: int = 5) -> KernelOutput:
-    return range(pos[0], pos[0] + direction * length, direction), [pos[1]] * length
+    return np.arange(pos[0], pos[0] + direction * length, direction), [pos[1]] * np.ones(length, dtype = 'int8')
 
 
 def get_kern_diag_idx(pos: Tuple[int,int], slope:Tuple(int, int) = 1, length: int = 5) -> KernelOutput:
-    return range(pos[0], pos[0] + slope[0] * length, slope[0]), range(pos[1], pos[1] + slope[1] * length, slope[1])
+    return np.arange(pos[0], pos[0] + slope[0] * length, slope[0]), np.arange(pos[1], pos[1] + slope[1] * length, slope[1])
 
 
 # @njit(parallel=True, fastmath=True)
