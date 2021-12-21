@@ -246,7 +246,7 @@ class GameUI(MyWindow):
         stones_to_rm = iscapture_position(grid, self.current_coord + 4, self.stone) # +4 due to the padding of the grid
         remove_opponent_pair(grid, stones_to_rm)
         # Child node creation
-        node = Node(self.node, grid, self.stone, 0, self.current_coord + 4) # FIXME: 0 is for the longest sequence, it will be remove when refactoring Node class
+        node = Node(self.node, grid, self.stone, self.current_coord + 4)
 
         return node
 
