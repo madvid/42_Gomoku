@@ -15,6 +15,9 @@ k_croix = np.array([[1, 0, 1, 0, 1],
                     [1, 1, 1, 1, 1],
                     [0, 1, 1, 1, 0],
                     [1, 0, 1, 0, 1]])
+
+k_5_stones = np.array([1, 1, 1, 1, 1])
+
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric: dict = {BLACK: np.max, WHITE: np.min} # A dict containing the scoring metrics for black and white
@@ -43,10 +46,20 @@ class Node():
                   Fasle -> game not finished yet
         """
         r_conv = []
-        self.grid[get_kern_col_idx(self.current_pos - 5)]
-        self.grid[get_kern_col_idx(self.current_pos)]
+        # Check 5 stones along column
+        r_conv.append(np.dot(self.grid[get_kern_col_idx(self.current_pos, -1, 5)], self.color * k_5_stones))
+        r_conv.append(np.dot(self.grid[get_kern_col_idx(self.current_pos, 1, 5)], self.color * k_5_stones))
+        # Check 5 stones along row
+        r_conv.append(np.dot(self.grid[get_kern_row_idx(self.current_pos, -1, 5)], self.color * k_5_stones))
+        r_conv.append(np.dot(self.grid[get_kern_row_idx(self.current_pos, 1, 5)], self.color * k_5_stones))
+        # Check 5 stones along diagonals
+        r_conv.append(np.dot(self.grid[get_kern_diag_idx(self.current_pos, (-1, -1), 5)], self.color * k_5_stones))
+        r_conv.append(np.dot(self.grid[get_kern_diag_idx(self.current_pos, (-1, 1), 5)], self.color * k_5_stones))
+        r_conv.append(np.dot(self.grid[get_kern_diag_idx(self.current_pos, (1, -1), 5)], self.color * k_5_stones))
+        r_conv.append(np.dot(self.grid[get_kern_diag_idx(self.current_pos, (1, 1), 5)], self.color * k_5_stones))
+        if any([r == 5 for r in r_conv]):
+            return True
         return False
-        return True
 
     def update(self, pos: Tuple[int,int], adv_color: int) -> Node:
         
@@ -69,12 +82,12 @@ class Node():
             #print(f"score.shape = {score.shape}")
             score += self.apply_kern(c * k)
         self.isterminal = self.is_terminal()
+        if self.isterminal:
+            score[2][2] += self.color * 1000 
         return score
     
     def score(self):
-        if self.isterminal == True:
-            pass # FIXME
-        self.scoreboard[self.color].max()
+        return self.scoreboard[self.color].max()
 
     def apply_kern(self, k_score: np.array):
         if self.current_pos is None:
