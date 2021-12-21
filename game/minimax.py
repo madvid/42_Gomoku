@@ -130,7 +130,7 @@ class Solver():
     def find_best_move(self, current_state: Node) -> Node:
         # print("find best move")
         #t1 = time.time()
-        nxt = current_state.generate_next_moves()
+        nxt = list(current_state.generate_next_moves())
         #t2 = time.time()
         
         #print(f"next moves len = {len(nxt)} ({t2 -t1} s)")

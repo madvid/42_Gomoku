@@ -35,6 +35,13 @@ class Node():
         if not pos is None:
             self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
+        ########################################################################
+        # FIXME: should the code below be put in a dedicated func?
+        pos_to_rm = iscapture_position(self.grid, self.current_pos, self.color)
+        remove_opponent_pair(self.grid, pos_to_rm)
+        ########################################################################
+
+
     def is_terminal(self) -> bool:
         """Evaluates if the node is a terminal one, meaning the conditions of victory are met.
         Victory of a player is when:
@@ -199,19 +206,17 @@ class Node():
         # ])
         mask = (convolve2d(np.absolute(self.grid[4:-4, 4:-4]), kernel, mode='same') >= 1) & (self.grid[4:-4, 4:-4] == 0)
         possibles_moves_idx = np.argwhere(mask != 0)
+        # # sorted_mask = np.sort(mask, axis=None)#[np.unravel_index(np.argsort(mask, axis=None)[-1 * self.color:0:-1*self.color], (19,19))]
+        # # print(sorted_mask)
+        # # possibles_moves_idx = np.argwhere(sorted_mask != 0)
+
+        # # print(possibles_moves_idx)
+
         # We add +4 to the following x and y due to the fact the grid is padded 
         #possibles_moves = [(-abs(self.scoreboard[self.color][4:-4, 4:-4][x,y]), self.update((x + 4,y + 4), -self.color)) for x,y in possibles_moves_idx]
-        possibles_moves = [self.update((x + 4,y + 4), -self.color) for x,y in possibles_moves_idx]
+        possibles_moves = (self.update((x + 4,y + 4), -self.color) for x,y in possibles_moves_idx)
         
-        for m in possibles_moves:
-            # Captured stones
-            pos_to_rm = iscapture_position(m.grid, m.current_pos, m.color)
-            remove_opponent_pair(m.grid, pos_to_rm)
-           
-            # # Double free-three
-        #print("POSSIBLES_MOVES = ", possibles_moves)
-        # print(f"len possible moves: {len(possibles_moves)}")
-        heapify(possibles_moves)
+        # heapify(possibles_moves)
         return possibles_moves
 
     def score(self) -> int:
