@@ -7,20 +7,23 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, \
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import QTimer
 import numpy as np
 import numpy.typing as npt
 from math import fabs
 from typing import Tuple
 
-
 # =========================================================================== #
 # ___________________________    |CONSTANTES|    ____________________________ #
 # =========================================================================== #
+from constants import TOP_LEFT_X, TOP_LEFT_Y, BOTTOM_RIGHT_X, BOTTOM_RIGHT_Y
+
+
 BLACK = 1
 WHITE = -1
 
 W_WIDTH = 1080
-W_HEIGHT = 720
+W_HEIGHT = 940
 MAIN_BTN_WIDTH = int(0.15 * W_WIDTH)
 MAIN_BTN_HEIGHT = int(0.8 * W_HEIGHT)
 
@@ -72,6 +75,7 @@ assets = {"button back": "assets/BACK.png",
           "chr_Ppeigne": "assets/pixel_ppeigne.png",
           "white_stone": "assets/stone_white.png",
           "black_stone": "assets/stone_black.png",
+          "timer": "assets/time.png"
           }
 
 dct_stylesheet = {"menu_button": "*{border: 4px solid '#1B5DBF';" +
@@ -132,11 +136,12 @@ coords = np.array(np.meshgrid(nodes_x, nodes_y)).T.reshape(-1,2)
 # =========================================================================== #
 
 def nearest_coord(point:np.array) -> np.array:
-    ii = point[0] // 31
-    jj = point[1] // 31
-    if fabs(point[0] - ii * 31) >  fabs(point[0] - (ii + 1) * 31):
+    trsl_pt = point - np.array([TOP_LEFT_X, TOP_LEFT_Y])
+    ii = trsl_pt[0] // 31
+    jj = trsl_pt[1] // 31
+    if fabs(trsl_pt[0] - ii * 31) >  fabs(trsl_pt[0] - (ii + 1) * 31):
         ii += 1
-    if fabs(point[1] - jj * 31) >  fabs(point[1] - (jj + 1) * 31):
+    if fabs(trsl_pt[1] - jj * 31) >  fabs(trsl_pt[1] - (jj + 1) * 31):
         jj += 1
     return np.array([ii * 31, jj * 31]) 
 
@@ -178,10 +183,16 @@ class MyWindow(QWidget):
         self.stack1UI()
         self.stack2UI()
         self.stack3UI()
-        self.Stack = QStackedWidget (self)
-        self.Stack.addWidget (self.stack1)
-        self.Stack.addWidget (self.stack2)
-        self.Stack.addWidget (self.stack3)
+        self.Stack = QStackedWidget(self)
+        self.Stack.addWidget(self.stack1)
+        self.Stack.addWidget(self.stack2)
+        self.Stack.addWidget(self.stack3)
+        
+        # Timer related
+        self.count_black = 0
+        self.count_white = 0
+        self.start_black = False
+        self.start_white = False
 
 
     def stack1UI(self):
@@ -297,7 +308,13 @@ class MyWindow(QWidget):
                           "score p2": QLabel(),
                           "button quit": QPushButton(""),
                           "button backward": QPushButton(""),
-                          "button forward": QPushButton("")
+                          "button forward": QPushButton(""),
+                          "label timer 1": QLabel(),
+                          "label timer 2": QLabel(),
+                          "display timer 1": QLabel("  00.00 s"),
+                          "display timer 2": QLabel("  00.00 s"),
+                          "timer 1": QTimer(),
+                          "timer 2": QTimer(),
                           }
         # Display logo
         img_board = QPixmap(assets["img_board"])
@@ -326,6 +343,18 @@ class MyWindow(QWidget):
         self.wdgts_UI3["button forward"].setStyleSheet(dct_stylesheet["forwrd_btn"])
         self.wdgts_UI3["button forward"].clicked.connect(self.game_forward)
 
+        self.wdgts_UI3["label timer 1"].setPixmap(QPixmap(assets["timer"]))
+        self.wdgts_UI3["label timer 2"].setPixmap(QPixmap(assets["timer"]))
+        self.wdgts_UI3["display timer 1"].setStyleSheet("*{font-size: 24px; color: White;}")
+        self.wdgts_UI3["display timer 2"].setStyleSheet("*{font-size: 24px; color: White;}")
+        
+        self.wdgts_UI3["timer 1"].timeout.connect(self.showtime_timer1)
+        self.wdgts_UI3["timer 2"].timeout.connect(self.showtime_timer2)
+        #self.wdgts_UI3["timer 1"].setInterval(1) # set the interval to 1 ms
+        #self.wdgts_UI3["timer 2"].setInterval(1) # set the interval to 1 ms
+        self.wdgts_UI3["timer 1"].start(10)
+        self.wdgts_UI3["timer 2"].start(10)
+        
         self.wdgts_UI3["board"].adjustSize()
         self.wdgts_UI3["label p1"].adjustSize()
         self.wdgts_UI3["label p2"].adjustSize()
@@ -333,19 +362,25 @@ class MyWindow(QWidget):
         self.wdgts_UI3["label score p2"].adjustSize()
         self.wdgts_UI3["score p1"].adjustSize()
         self.wdgts_UI3["score p2"].adjustSize()
+        self.wdgts_UI3["label timer 1"].adjustSize()
+        self.wdgts_UI3["label timer 2"].adjustSize()
 
         # Placing all the widgets in the main menu frame:
         grid = QGridLayout()
-        grid.addWidget(self.wdgts_UI3["board"], 0, 0, 4, 4)
-        grid.addWidget(self.wdgts_UI3["label p1"], 0, 5, 1, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["label score p1"], 1, 5, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["score p1"], 1, 6)
-        grid.addWidget(self.wdgts_UI3["label p2"], 2, 5, 1, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["label score p2"], 3, 5, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["score p2"], 3, 6)
-        grid.addWidget(self.wdgts_UI3["button quit"], 4, 0, 1, 2)
-        grid.addWidget(self.wdgts_UI3["button backward"], 4, 2, 1, 1)
-        grid.addWidget(self.wdgts_UI3["button forward"], 4, 3, 1, 1)
+        grid.addWidget(self.wdgts_UI3["label p1"], 0, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
+        grid.addWidget(self.wdgts_UI3["label score p1"], 1, 0, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["score p1"], 1, 1, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["label timer 1"], 2, 0, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["display timer 1"], 2, 1, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["label p2"], 0, 3, 1, 2, alignment=QtCore.Qt.AlignCenter)
+        grid.addWidget(self.wdgts_UI3["label score p2"], 1, 3, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["score p2"], 1, 4, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["label timer 2"], 2, 3, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["display timer 2"], 2, 4, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["board"], 3, 1, 4, 4, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["button quit"], 8, 1)
+        grid.addWidget(self.wdgts_UI3["button backward"], 8, 2)
+        grid.addWidget(self.wdgts_UI3["button forward"], 8, 3)
         self.stack3.setLayout(grid)
 
 
@@ -404,15 +439,27 @@ class MyWindow(QWidget):
 
 
     def game_backward(self):
-        pass
+        raise NotImplementedError()
 
 
     def game_forward(self):
-        pass
+        raise NotImplementedError()
 
 
     def game_score(self):
-        pass
+        raise NotImplementedError()
+
+
+    def showtime_timer1(self):
+        if self.start_black:
+            self.count_black += 10
+            # getting and displaying text from count
+            self.wdgts_UI3["display timer 1"].setText(str(self.count_black / 1000) + " s")
+
+    def showtime_timer2(self):
+        if self.start_white:
+            self.count_white += 10
+            self.wdgts_UI3["display timer 2"].setText(str(self.count_white / 1000) + " s")
 
 
     def select_character_1(self):
@@ -529,40 +576,41 @@ class MyWindow(QWidget):
             self.wdgts_UI2["character 6"].setStyleSheet(dct_stylesheet["character"])
 
     def mousePressEvent(self, event):
-        def on_board(qpoint):
-            x, y = qpoint.x(), qpoint.y()
-            if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
-                return True
-            return False
+        #def on_board(qpoint):
+        #    x, y = qpoint.x(), qpoint.y()
+        #    if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
+        #        return True
+        #    return False
 
 
-        if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
-            current_stone =  QLabel("", self.wdgts_UI3["board"])
-            current_stone.setStyleSheet("background-color: transparent;")
-            # Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
-            if self.stone == WHITE:
-                px_stone = QPixmap(assets["stone_white"])
-                px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-                current_stone.setPixmap(px_stone)
-                self.W_whitestones.append(current_stone)
-            else:
-                px_stone = QPixmap(assets["stone_black"])
-                px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-                current_stone.setPixmap(px_stone)
-                self.W_blackstones.append(current_stone)
-
-            print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
-            nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-            #print(nearest)
-            
-            if not hasattr(self, 'grid'):
-                self.grid = np.zeros((19,19))
-            stone_to_board(nearest, self.stone, self.grid)
-            self.stone = - self.stone
-            #print(board)
-            current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
-            #self.stack3.addWidget(current_stone)
-            current_stone.show()
+        #if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
+        #    current_stone =  QLabel("", self.wdgts_UI3["board"])
+        #    current_stone.setStyleSheet("background-color: transparent;")
+        #    # Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
+        #    if self.stone == WHITE:
+        #        px_stone = QPixmap(assets["stone_white"])
+        #        px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+        #        current_stone.setPixmap(px_stone)
+        #        self.W_whitestones.append(current_stone)
+        #    else:
+        #        px_stone = QPixmap(assets["stone_black"])
+        #        px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+        #        current_stone.setPixmap(px_stone)
+        #        self.W_blackstones.append(current_stone)
+        #
+        #    print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
+        #    nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
+        #    #print(nearest)
+        #    
+        #    if not hasattr(self, 'grid'):
+        #        self.grid = np.zeros((19,19))
+        #    stone_to_board(nearest, self.stone, self.grid)
+        #    self.stone = - self.stone
+        #    #print(board)
+        #    current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
+        #    #self.stack3.addWidget(current_stone)
+        #    current_stone.show()
+        raise NotImplementedError()
 
 
 def window(mywindow:MyWindow):

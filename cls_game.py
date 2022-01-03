@@ -20,10 +20,12 @@ from game.history import History
 from game.rules import iscapture_position, remove_opponent_pair
 
 
+import time # TO REMOVE
+
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
-from constants import WHITE, BLACK, k_captures, k_freethree
+from constants import WHITE, BLACK, k_captures, k_freethree, TOP_LEFT_Y, TOP_LEFT_X, BOTTOM_RIGHT_X, BOTTOM_RIGHT_Y
 
 TOT = 0
 
@@ -103,6 +105,7 @@ class GameUI(MyWindow):
     def game_backward(self):
         """[summary]
         """
+        
         if self.history.i_current > 0:
             self.history.i_current -= 1
             self.grid = self.history.lst_nodes[self.history.i_current]
@@ -226,7 +229,7 @@ class GameUI(MyWindow):
         --------
             (bool): boolean traducing if position is available.
         """
-        if self.isbusy(self.current_coord + 4, self.node.grid[4:-4, 4:-4]):
+        if self.isbusy(self.current_coord, self.node.grid[4:-4, 4:-4]):
             print("position is not available.")
             return False
         if self.isdoublefreethree_position(self.current_coord, self.node.grid[4 : -4, 4 : -4], self.stone):
@@ -291,6 +294,36 @@ class GameUI(MyWindow):
         self.W_whitestones = []
 
 
+    def _timer_start(self, color):
+        if color is BLACK:
+            self.start_black = True
+        if color is WHITE:
+            self.start_white = True
+
+
+    def _timer_stop(self, color):
+        if color is BLACK:
+            self.start_black = False
+        if color is WHITE:
+            self.start_white = False
+
+
+    def _timer_switch(self):
+        if self.start_black:
+            self._timer_stop(BLACK)
+            self._timer_start(WHITE)
+        else:
+            self._timer_stop(WHITE)
+            self._timer_start(BLACK)
+
+
+    def _timer_reset(self):
+        self.wdgts_UI3[f"display timer 1"].setText("  00.00 s")
+        self.wdgts_UI3[f"display timer 2"].setText("  00.00 s")
+        self.count_black = 0
+        self.count_white = 0
+
+
     def mousePressEvent(self, event):
         def on_board(qpoint):
             """Checks if the position of the mouse click event is on the
@@ -303,7 +336,8 @@ class GameUI(MyWindow):
                 (bool): True if click is inside the board, False otherwise.y
             """
             x, y = qpoint.x(), qpoint.y()
-            if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
+            if (x >= TOP_LEFT_X) and (x <= BOTTOM_RIGHT_X) \
+                and (y >= TOP_LEFT_Y) and (y <= BOTTOM_RIGHT_Y):
                 return True
             return False
         
@@ -311,6 +345,7 @@ class GameUI(MyWindow):
             if history.i_current + 1 != history.tot_nodes:
                 return False
             return True
+
         if (self.Stack.currentIndex() == 2) \
             and on_board(event.pos()) \
                 and (event.buttons() == QtCore.Qt.LeftButton) \
@@ -318,6 +353,8 @@ class GameUI(MyWindow):
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
                 return
+            
+            self._timer_start(BLACK) # setting start_black to True:
             
             self.node = self.create_node()
             self.history.add_nodes([self.node])
@@ -327,6 +364,9 @@ class GameUI(MyWindow):
 
             self.UiDestroyBoard()
             self.UiGenBoard()
+            
+            self._timer_switch()
+            # Changing related to the timer of the waiting player (here the 1st player):
             self.node = self.agent.find_best_move(self.node)
             if self.node != None:
                 self.history.add_nodes([self.node])
@@ -335,3 +375,6 @@ class GameUI(MyWindow):
                 self.i_round += 1
                 self.UiDestroyBoard()
                 self.UiGenBoard()
+            time.sleep(2) # TO REMOVE
+            self._timer_switch()
+            self._timer_reset()
