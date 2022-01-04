@@ -46,7 +46,8 @@ class Node():
         self.scoreboard = self.init_scoreboard()
 
         if not pos is None:
-            self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([self.color * k_nxt_opponent], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
+            self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([self.color * k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
+            # self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([self.color * k_nxt_opponent], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
 
             ########################################################################
             # FIXME: should the code below be put in a dedicated func?
@@ -96,6 +97,7 @@ class Node():
 
     def update_score(self, k_list, c_list):
         score = np.zeros((5, 5))
+        
         for c, k in zip(c_list, k_list):
             score += self.apply_kern(c * k)
         self.isterminal = self.is_terminal()
@@ -103,8 +105,18 @@ class Node():
             score[2][2] += self.color * 1000 
         return score
     
+    # def update_score(self, k_list, c_list):
+    #     score = np.zeros((5, 5))
+    #     for c, k in zip(c_list, k_list):
+    #         score += self.apply_kern(c * k)
+    #     self.isterminal = self.is_terminal()
+    #     if self.isterminal:
+    #         score[2][2] += self.color * 1000 
+    #     return score
+
     def score(self):
-        return self.scoreboard[self.color][4:-4,4:-4].sum() + self.scoreboard[self.color][4:-4,4:-4].max()
+        #return collect_sequences(self.grid, self.color)
+        return self.scoreboard[self.color][4:-4,4:-4].sum() #+ self.scoreboard[self.color][4:-4,4:-4].max()
 
     def apply_kern(self, k_score: np.array):
         if self.current_pos is None:
@@ -178,8 +190,8 @@ class Node():
         # heapify(possibles_moves)
         return possibles_moves
 
-    def score(self) -> int:
-        return self.scoreboard[self.color][self.current_pos]
+    # def score(self) -> int:
+    #     return self.scoreboard[self.color][self.current_pos]
         # return self.metric[color](self.scoreboard[color]) + self.metric[-color](self.scoreboard[-color])
 
     # def score(self, color: int) -> int:
@@ -196,7 +208,6 @@ class Node():
 def stone_sum(grid: np.ndarray) -> int:
     # Returns the difference between the total of black and white stones. The bigger the better.
     return grid.sum()
-
 
 
 def sum_longest(node: Node) -> int:
