@@ -169,6 +169,8 @@ class MyWindow(QWidget):
         self.stone = BLACK # 1 is black and -1 is white
         self.W_whitestones = []
         self.W_blackstones = []
+        self.coord_whitestones = []
+        self.coord_blackstones = []
 
         # Related to character selection on screen 2
         self.player_1 = None
@@ -177,9 +179,9 @@ class MyWindow(QWidget):
         self.p2_type = None
         
         # Multi screen in the window related widget
-        self.stack1 = QWidget()
-        self.stack2 = QWidget()
-        self.stack3 = QWidget()
+        self.stack1 = QWidget(self)
+        self.stack2 = QWidget(self)
+        self.stack3 = QWidget(self)
         self.stack1UI()
         self.stack2UI()
         self.stack3UI()
@@ -200,8 +202,8 @@ class MyWindow(QWidget):
         # Label (logo) widget
         image_main = QPixmap(assets["img_gomoku"])
         self.wdgts_UI1 = {"header": QLabel(),
-                          "button pvp": QPushButton("", self),
-                          "button pva": QPushButton("", self)
+                          "button pvp": QPushButton("", self.stack1),
+                          "button pva": QPushButton("", self.stack1)
                           }
         
         self.wdgts_UI1["header"].setPixmap(image_main)
@@ -240,14 +242,14 @@ class MyWindow(QWidget):
     def stack2UI(self):
         # -------- SELECT PERSO FRAME -------- #
         self.wdgts_UI2 = {"header": QLabel(),
-                          "character 1": QPushButton("", self),
-                          "character 2": QPushButton("", self),
-                          "character 3": QPushButton("", self),
-                          "character 4": QPushButton("", self),
-                          "character 5": QPushButton("", self),
-                          "character 6": QPushButton("", self),
-                          "button play": QPushButton("", self),
-                          "button back": QPushButton("", self)
+                          "character 1": QPushButton("", self.stack2),
+                          "character 2": QPushButton("", self.stack2),
+                          "character 3": QPushButton("", self.stack2),
+                          "character 4": QPushButton("", self.stack2),
+                          "character 5": QPushButton("", self.stack2),
+                          "character 6": QPushButton("", self.stack2),
+                          "button play": QPushButton("", self.stack2),
+                          "button back": QPushButton("", self.stack2)
                           }
         # Display logo
         image_select = QPixmap("assets/character_selection.png")
@@ -298,23 +300,22 @@ class MyWindow(QWidget):
 
     def stack3UI(self):
         # -------- GAME FRAME -------- #
-        self.wdgts_UI3 = {"header": QLabel(),
-                          "board": QLabel(),
-                          "label p1": QLabel(),
-                          "label p2": QLabel(),
-                          "label score p1": QLabel(),
-                          "label score p2": QLabel(),
-                          "score p1": QLabel(),
-                          "score p2": QLabel(),
-                          "button quit": QPushButton(""),
-                          "button backward": QPushButton(""),
-                          "button forward": QPushButton(""),
-                          "label timer 1": QLabel(),
-                          "label timer 2": QLabel(),
-                          "display timer 1": QLabel("  00.00 s"),
-                          "display timer 2": QLabel("  00.00 s"),
-                          "timer 1": QTimer(),
-                          "timer 2": QTimer(),
+        self.wdgts_UI3 = {"board": QLabel(self.stack3),
+                          "label p1": QLabel(self.stack3),
+                          "label p2": QLabel(self.stack3),
+                          "label score p1": QLabel(self.stack3),
+                          "label score p2": QLabel(self.stack3),
+                          "score p1": QLabel(self.stack3),
+                          "score p2": QLabel(self.stack3),
+                          "button quit": QPushButton("",self.stack3),
+                          "button backward": QPushButton("",self.stack3),
+                          "button forward": QPushButton("",self.stack3),
+                          "label timer 1": QLabel(self.stack3),
+                          "label timer 2": QLabel(self.stack3),
+                          "display timer 1": QLabel("  00.00 s", self.stack3),
+                          "display timer 2": QLabel("  00.00 s", self.stack3),
+                          "timer 1": QTimer(self.stack3),
+                          "timer 2": QTimer(self.stack3),
                           }
         # Display logo
         img_board = QPixmap(assets["img_board"])
@@ -576,40 +577,6 @@ class MyWindow(QWidget):
             self.wdgts_UI2["character 6"].setStyleSheet(dct_stylesheet["character"])
 
     def mousePressEvent(self, event):
-        #def on_board(qpoint):
-        #    x, y = qpoint.x(), qpoint.y()
-        #    if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
-        #        return True
-        #    return False
-
-
-        #if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
-        #    current_stone =  QLabel("", self.wdgts_UI3["board"])
-        #    current_stone.setStyleSheet("background-color: transparent;")
-        #    # Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
-        #    if self.stone == WHITE:
-        #        px_stone = QPixmap(assets["stone_white"])
-        #        px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-        #        current_stone.setPixmap(px_stone)
-        #        self.W_whitestones.append(current_stone)
-        #    else:
-        #        px_stone = QPixmap(assets["stone_black"])
-        #        px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-        #        current_stone.setPixmap(px_stone)
-        #        self.W_blackstones.append(current_stone)
-        #
-        #    print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
-        #    nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-        #    #print(nearest)
-        #    
-        #    if not hasattr(self, 'grid'):
-        #        self.grid = np.zeros((19,19))
-        #    stone_to_board(nearest, self.stone, self.grid)
-        #    self.stone = - self.stone
-        #    #print(board)
-        #    current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
-        #    #self.stack3.addWidget(current_stone)
-        #    current_stone.show()
         raise NotImplementedError()
 
 
