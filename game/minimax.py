@@ -139,12 +139,12 @@ class Solver():
         #next_moves = [(self.minimax_ab_tt(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK, n.color * -1), n ) for _, n in nxt]
         
         #next_moves = [(self.minimax(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK)) for _, n in nxt]
-        next_moves = [self.minimax_ab(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK) for n in nxt]
+        next_moves = [self.minimax_ab(n, self.depth, float('-inf'), float('inf'), current_state.color != BLACK) for n in nxt]
         #next_moves = [(self.minimax_ab_tt(n, self.depth, float('-inf'), float('inf'), current_state.color == BLACK), n) for _, n in nxt]
         
         #print(next_moves)
         if len(next_moves) != 0:
-            if current_state.color == BLACK:
+            if current_state.color != BLACK:
                 max_score = max(next_moves)
                 #print("max_score = ", max_score)
                 #print("where next_moves == max_score = ", np.argwhere(np.array(next_moves) == max_score))
