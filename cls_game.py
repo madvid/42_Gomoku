@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, \
-    QVBoxLayout, QWidget, QGridLayout, QStackedWidget, QHBoxLayout, QVBoxLayout
+    QVBoxLayout, QMessageBox, QGridLayout, QStackedWidget, QHBoxLayout, QVBoxLayout
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import QObject, QEvent, QRunnable, QThreadPool
 
 from typing import Tuple, List
 import numpy as np
@@ -77,14 +78,45 @@ def get_diag2_idx(yx:np.array):
 # =========================================================================== #
 #                           | Classes definition |                            #
 # =========================================================================== #
+
+
+class WorkerSignals(QObject):
+    started = QtCore.pyqtSignal()
+    finished = QtCore.pyqtSignal(int)
+    timerswitching = QtCore.pyqtSignal(int)
+    error = QtCore.pyqtSignal(tuple)
+    result = QtCore.pyqtSignal(object)
+    progress = QtCore.pyqtSignal(int)
+
+class Worker(QRunnable):
+    
+    def __init__(self, node: Node, agent: Solver):
+        super(Worker, self).__init__()
+        self.node = node
+        self.agent = agent
+        self.signals = WorkerSignals()
+        
+    @QtCore.pyqtSlot()
+    def run(self):
+        node =self.agent.find_best_move(self.node)
+        self.signals.result.emit(node)
+        self.signals.finished.emit(node.color)
+        self.signals.timerswitching.emit(-node.color)
+
+
 class GameUI(MyWindow):
+    
+    timerSwitch = QtCore.pyqtSignal(int, int)
+    timerReset = QtCore.pyqtSignal(int)
+    timerStop = QtCore.pyqtSignal(int)
+    timerStart = QtCore.pyqtSignal(int)
+    boardGenerated = QtCore.pyqtSignal()
+    boardDestroyed = QtCore.pyqtSignal()
+    actionAgent = QtCore.pyqtSignal()
+    
     def __init__(self, gmode:int):
         super(GameUI, self).__init__()
         # Board creation and player related attributes
-        self.W_whitestones = []
-        self.W_blackstones = []
-        self.coord_whitestones = []
-        self.coord_blackstones = []
         self.p1_score = 0
         self.p2_score = 0
 
@@ -100,12 +132,21 @@ class GameUI(MyWindow):
         self.history = History()
         self.history.add_nodes([self.node])
         
+        # Connection of signals to the corresponding slots
+        self.freezeclick = False
+        self.timerSwitch.connect(self._timer_switch)
+        self.timerReset.connect(self._timer_reset)
+        self.timerStart.connect(self._timer_start)
+        self.timerStop.connect(self._timer_stop)
+        self.boardGenerated.connect(self.UiGenBoard)
+        self.boardDestroyed.connect(self.UiDestroyBoard)
+        self.actionAgent.connect(self.agent_exec_move)
+        self.threadpool = QThreadPool()
 
         
     def game_backward(self):
         """[summary]
         """
-        
         if self.history.i_current > 0:
             self.history.i_current -= 1
             self.grid = self.history.lst_nodes[self.history.i_current]
@@ -251,7 +292,7 @@ class GameUI(MyWindow):
 
         return node
 
-
+    @QtCore.pyqtSlot()
     def UiGenBoard(self):
         """
         """
@@ -279,6 +320,7 @@ class GameUI(MyWindow):
             self.W_whitestones.append(stone)
 
 
+    @QtCore.pyqtSlot()
     def UiDestroyBoard(self):
         """
         """
@@ -292,37 +334,63 @@ class GameUI(MyWindow):
         
         self.W_blackstones = []
         self.W_whitestones = []
+        self.boardGenerated.emit()
 
-
-    def _timer_start(self, color):
+    @QtCore.pyqtSlot(int)
+    def _timer_start(self, color:int):
         if color is BLACK:
             self.start_black = True
         if color is WHITE:
             self.start_white = True
 
 
-    def _timer_stop(self, color):
+    @QtCore.pyqtSlot(int)
+    def _timer_stop(self, color:int):
         if color is BLACK:
             self.start_black = False
         if color is WHITE:
             self.start_white = False
 
 
-    def _timer_switch(self):
-        if self.start_black:
-            self._timer_stop(BLACK)
-            self._timer_start(WHITE)
-        else:
-            self._timer_stop(WHITE)
-            self._timer_start(BLACK)
+    @QtCore.pyqtSlot(int, int)
+    def _timer_switch(self, to_stop: int, to_start: int):
+        self.timerstop.emit(to_stop)
+        self.timerstart.emit(to_start)
 
 
-    def _timer_reset(self):
-        self.wdgts_UI3[f"display timer 1"].setText("  00.00 s")
-        self.wdgts_UI3[f"display timer 2"].setText("  00.00 s")
-        self.count_black = 0
-        self.count_white = 0
+    @QtCore.pyqtSlot(int)
+    def _timer_reset(self, color: int):
+        if color == BLACK:
+            self.wdgts_UI3[f"display timer 1"].setText("  00.00 s")
+            self.count_black = 0
+        if color == WHITE:
+           self.wdgts_UI3[f"display timer 2"].setText("  00.00 s")
+           self.count_white = 0
 
+
+    def _catch_node_(self, node):
+        self.node = node
+        
+
+    @QtCore.pyqtSlot()
+    def agent_exec_move(self):
+        #self.node = self.agent.find_best_move(self.node)
+        worker = Worker(self.node, self.agent)
+        worker.signals.result.connect(self._catch_node_)
+        worker.signals.finished.connect(self._timer_stop)
+        worker.signals.finished.connect(self.UiDestroyBoard)
+        worker.signals.timerswitching.connect(self._timer_reset)
+        worker.signals.timerswitching.connect(self._timer_start)
+        self.threadpool.start(worker)
+        
+        if self.node != None:
+            self.history.add_nodes([self.node])
+            # Changing self.stone color and incrementing round_counter
+            self.stone = -self.stone
+            self.i_round += 1
+            #self.boardDestroyed.emit()
+        #self.timerReset.emit(self.stone)
+        #self.timerStart.emit(self.stone)
 
     def mousePressEvent(self, event):
         def on_board(qpoint):
@@ -335,6 +403,7 @@ class GameUI(MyWindow):
             --------
                 (bool): True if click is inside the board, False otherwise.y
             """
+            
             x, y = qpoint.x(), qpoint.y()
             if (x >= TOP_LEFT_X) and (x <= BOTTOM_RIGHT_X) \
                 and (y >= TOP_LEFT_Y) and (y <= BOTTOM_RIGHT_Y):
@@ -346,6 +415,8 @@ class GameUI(MyWindow):
                 return False
             return True
 
+        if self.freezeclick:
+            return
         if (self.Stack.currentIndex() == 2) \
             and on_board(event.pos()) \
                 and (event.buttons() == QtCore.Qt.LeftButton) \
@@ -353,28 +424,33 @@ class GameUI(MyWindow):
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
                 return
-            
-            self._timer_start(BLACK) # setting start_black to True:
-            
+            self.timerStop.emit(self.stone)
+
             self.node = self.create_node()
             self.history.add_nodes([self.node])
-            # Changing self.stone color and incrementing round_counter
-            self.stone = -self.stone
-            self.i_round += 1
+            self.boardDestroyed.emit()
 
-            self.UiDestroyBoard()
-            self.UiGenBoard()
+            # Changing self.stone color and incrementing round_counter
+            self.i_round += 1
+            self.stone = -self.stone
             
-            self._timer_switch()
+            self.timerReset.emit(self.stone)
+            self.timerStart.emit(self.stone)
+            if self.p2_type == "IA":
+                self.actionAgent.emit()
+            
             # Changing related to the timer of the waiting player (here the 1st player):
-            self.node = self.agent.find_best_move(self.node)
-            if self.node != None:
-                self.history.add_nodes([self.node])
-                # Changing self.stone color and incrementing round_counter
-                self.stone = -self.stone
-                self.i_round += 1
-                self.UiDestroyBoard()
-                self.UiGenBoard()
-            time.sleep(2) # TO REMOVE
-            self._timer_switch()
-            self._timer_reset()
+            #self.node = self.agent.find_best_move(self.node)
+            
+            #if self.node != None:
+            #    self.history.add_nodes([self.node])
+            #    # Changing self.stone color and incrementing round_counter
+            #    self.stone = -self.stone
+            #    self.i_round += 1
+            #    #self.UiDestroyBoard()
+            #    self.boardDestroyed.emit()
+            #    #self.UiGenBoard()
+            #
+            ##self.timerReset.emit(self.stone)
+            ##self.timerStart.emit(self.stone)
+            
