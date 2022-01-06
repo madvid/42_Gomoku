@@ -137,7 +137,7 @@ class GameUI(MyWindow):
         # Connection of signals to the corresponding slots
         self.freeze = False
         self.freezeHuman.connect(self.freeze_human_agent)
-        self.unfreezeHuman.connect(self.freeze_human_agent)
+        self.unfreezeHuman.connect(self.unfreeze_human_agent)
         self.timerSwitch.connect(self._timer_switch)
         self.timerReset.connect(self._timer_reset)
         self.timerStart.connect(self._timer_start)
@@ -467,6 +467,7 @@ class GameUI(MyWindow):
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
                 self.unfreezeHuman.emit()
+                print("freeze status", self.freeze)
                 return
             
             self.timerStop.emit(self.stone)
