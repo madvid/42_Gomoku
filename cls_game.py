@@ -113,8 +113,10 @@ class GameUI(MyWindow):
     boardGenerated = QtCore.pyqtSignal()
     boardDestroyed = QtCore.pyqtSignal()
     actionAgent = QtCore.pyqtSignal()
+    freezeHuman = QtCore.pyqtSignal()
+    unfreezeHuman = QtCore.pyqtSignal()
     
-    def __init__(self, gmode:int):
+    def __init__(self):
         super(GameUI, self).__init__()
         # Board creation and player related attributes
         self.p1_score = 0
@@ -133,7 +135,9 @@ class GameUI(MyWindow):
         self.history.add_nodes([self.node])
         
         # Connection of signals to the corresponding slots
-        self.freezeclick = False
+        self.freeze = False
+        self.freezeHuman.connect(self.freeze_human_agent)
+        self.unfreezeHuman.connect(self.freeze_human_agent)
         self.timerSwitch.connect(self._timer_switch)
         self.timerReset.connect(self._timer_reset)
         self.timerStart.connect(self._timer_start)
@@ -143,15 +147,34 @@ class GameUI(MyWindow):
         self.actionAgent.connect(self.agent_exec_move)
         self.threadpool = QThreadPool()
 
+
+    def game_quit(self):
+        super().game_quit()
+        self.p1_score = 0
+        self.p2_score = 0
+        self.node = Node(None, np.zeros((SIZE + 8,SIZE + 8), dtype=np.int8), WHITE)
+        self.node.nb_free_three = 0
+
+        self.i_round = 0
+        self.history = History()
+        self.history.add_nodes([self.node])
         
+        self.agent = Solver(depth=1)
+
+
+    def game_play(self):
+        super().game_play()
+        self.timerStart.emit(self.stone) # starting the timer of the 1st player as soon the game scene is displayed
+
+
     def game_backward(self):
         """[summary]
         """
         if self.history.i_current > 0:
+            self.freeze = True
             self.history.i_current -= 1
-            self.grid = self.history.lst_nodes[self.history.i_current]
-            self.UiDestroyBoard()
-            self.UiGenBoard()
+            #self.grid = self.history.lst_nodes[self.history.i_current]
+            self.boardDestroyed.emit()
 
 
     def game_forward(self):
@@ -159,9 +182,11 @@ class GameUI(MyWindow):
         """
         if self.history.i_current + 1 < self.history.tot_nodes:
             self.history.i_current += 1
-            self.grid = self.history.lst_nodes[self.history.i_current]
-            self.UiDestroyBoard()
-            self.UiGenBoard()
+            #self.grid = self.history.lst_nodes[self.history.i_current]
+            self.boardDestroyed.emit()
+        
+        if self.history.i_current == self.history.tot_nodes:
+            self.freeze = False
 
 
     def game_score(self, scores: Tuple[int]):
@@ -296,8 +321,11 @@ class GameUI(MyWindow):
     def UiGenBoard(self):
         """
         """
-        self.coord_blackstones= np.argwhere(self.node.grid[4 : -4, 4 : -4] == BLACK)
-        self.coord_whitestones = np.argwhere(self.node.grid[4 : -4, 4 : -4] == WHITE)
+        #self.coord_blackstones = np.argwhere(self.node.grid[4 : -4, 4 : -4] == BLACK)
+        #self.coord_whitestones = np.argwhere(self.node.grid[4 : -4, 4 : -4] == WHITE)
+        self.coord_blackstones = np.argwhere(self.history.lst_nodes[self.history.i_current][4 : -4, 4 : -4] == BLACK)
+        self.coord_whitestones = np.argwhere(self.history.lst_nodes[self.history.i_current][4 : -4, 4 : -4] == WHITE)
+        
         
         for bs in self.coord_blackstones:
             stone = QLabel("", self.wdgts_UI3["board"])
@@ -367,9 +395,10 @@ class GameUI(MyWindow):
            self.wdgts_UI3[f"display timer 2"].setText("  00.00 s")
            self.count_white = 0
 
-
+    @QtCore.pyqtSlot(Node)
     def _catch_node_(self, node):
         self.node = node
+        self.history.add_nodes([self.node])
         
 
     @QtCore.pyqtSlot()
@@ -377,8 +406,10 @@ class GameUI(MyWindow):
         #self.node = self.agent.find_best_move(self.node)
         worker = Worker(self.node, self.agent)
         worker.signals.result.connect(self._catch_node_)
-        worker.signals.finished.connect(self._timer_stop)
         worker.signals.finished.connect(self.UiDestroyBoard)
+        worker.signals.finished.connect(self._timer_stop)
+        worker.signals.finished.connect(self.unfreeze_human_agent)
+        
         worker.signals.timerswitching.connect(self._timer_reset)
         worker.signals.timerswitching.connect(self._timer_start)
         self.threadpool.start(worker)
@@ -389,8 +420,17 @@ class GameUI(MyWindow):
             self.stone = -self.stone
             self.i_round += 1
             #self.boardDestroyed.emit()
-        #self.timerReset.emit(self.stone)
-        #self.timerStart.emit(self.stone)
+
+
+    @QtCore.pyqtSlot()
+    def freeze_human_agent(self):
+        self.freeze = True
+
+
+    @QtCore.pyqtSlot()
+    def unfreeze_human_agent(self):
+        self.freeze = False
+
 
     def mousePressEvent(self, event):
         def on_board(qpoint):
@@ -415,15 +455,20 @@ class GameUI(MyWindow):
                 return False
             return True
 
-        if self.freezeclick:
+        if self.freeze:
             return
+        self.freezeHuman.emit()
+
         if (self.Stack.currentIndex() == 2) \
             and on_board(event.pos()) \
                 and (event.buttons() == QtCore.Qt.LeftButton) \
                     and iscurrentstate(self.history):
+            
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
+                self.unfreezeHuman.emit()
                 return
+            
             self.timerStop.emit(self.stone)
 
             self.node = self.create_node()
@@ -438,19 +483,5 @@ class GameUI(MyWindow):
             self.timerStart.emit(self.stone)
             if self.p2_type == "IA":
                 self.actionAgent.emit()
-            
-            # Changing related to the timer of the waiting player (here the 1st player):
-            #self.node = self.agent.find_best_move(self.node)
-            
-            #if self.node != None:
-            #    self.history.add_nodes([self.node])
-            #    # Changing self.stone color and incrementing round_counter
-            #    self.stone = -self.stone
-            #    self.i_round += 1
-            #    #self.UiDestroyBoard()
-            #    self.boardDestroyed.emit()
-            #    #self.UiGenBoard()
-            #
-            ##self.timerReset.emit(self.stone)
-            ##self.timerStart.emit(self.stone)
-            
+        
+        self.unfreezeHuman.emit()    

@@ -418,6 +418,7 @@ class MyWindow(QWidget):
         self.p2_type = None
         self.player_1 = None
         self.player_2 = None
+        
         for ii in range(1,7):
             CHARACTERS[f"character {ii}"]["check"] = False
             self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
@@ -430,7 +431,7 @@ class MyWindow(QWidget):
         del(self.W_blackstones)
         self.W_whitestones = []
         self.W_blackstones = []
-        self.grid[:,:] = 0
+
         self.Stack.setCurrentIndex(0)
 
 

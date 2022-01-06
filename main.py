@@ -20,8 +20,8 @@ import sys
 # _________________________________ | MAIN | ________________________________ #
 # =========================================================================== #
 if __name__ == "__main__":
-	game_mode = {"PvP": 1, "PvIA": 2, "IAvIA": 3}
+	#game_mode = {"PvP": 1, "PvIA": 2, "IAvIA": 3}
 	app = QApplication(sys.argv)
-	w_game = GameUI(gmode=game_mode["PvIA"])
+	w_game = GameUI()
 	w_game.show()
 	sys.exit(app.exec())
