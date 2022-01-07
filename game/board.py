@@ -44,6 +44,7 @@ class Node():
         self.isterminal = None
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
         self.scoreboard = self.init_scoreboard()
+        self.b_captured = 0
 
         if not pos is None:
             self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([self.color * k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
@@ -52,6 +53,7 @@ class Node():
             ########################################################################
             # FIXME: should the code below be put in a dedicated func?
             pos_to_rm = iscapture_position(self.grid, self.current_pos, self.color)
+            self.captured_pairs = len(pos_to_rm)
             remove_opponent_pair(self.grid, pos_to_rm)
             ########################################################################
 
@@ -126,6 +128,26 @@ class Node():
         #print(f"yx = {yx}")
         #print("sub view tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5]:\n",tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5])
         return  convolve2d(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5], k_score, "valid")
+
+# TO_FIX
+### Traceback (most recent call last):
+###   File "/Users/mdavid/Documents/gomoku/cls_game.py", line 542, in mousePressEvent
+###     self.history.add_nodes([self.node])
+###   File "/Users/mdavid/Documents/gomoku/cls_game.py", line 379, in create_node
+### 
+###   File "/Users/mdavid/Documents/gomoku/game/board.py", line 50, in __init__
+###     self.scoreboard[self.color][pos[0] - 2: pos[0] + 3, pos[1] - 2:pos[1] + 3] = self.update_score([self.color * k_croix], [1]) # update scoreboard with each kernel ponderated by the corresponding coef
+###   File "/Users/mdavid/Documents/gomoku/game/board.py", line 105, in update_score
+###     score += self.apply_kern(c * k)
+###   File "/Users/mdavid/Documents/gomoku/game/board.py", line 131, in apply_kern
+###     return  convolve2d(tmp[yx[0] - 4: yx[0] + 5, yx[1] - 4: yx[1] + 5], k_score, "valid")
+###   File "/goinfre/mdavid/v_gomoku/lib/python3.7/site-packages/scipy/signal/signaltools.py", line 1698, in convolve2d
+###     if _inputs_swap_needed(mode, in1.shape, in2.shape):
+###   File "/goinfre/mdavid/v_gomoku/lib/python3.7/site-packages/scipy/signal/signaltools.py", line 83, in _inputs_swap_needed
+###     raise ValueError("For 'valid' mode, one must be at least "
+### ValueError: For 'valid' mode, one must be at least as large as the other in every dimension
+### [1]    7422 abort      python main.py
+
 
     # def remove_sequences(self, grid: np.ndarray, sequences: List[StoneSequence]) -> np.ndarray:
     #     def remove_row(grid: np.ndarray, row: Row):

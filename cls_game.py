@@ -86,7 +86,7 @@ class WorkerSignals(QObject):
     timerswitching = QtCore.pyqtSignal(int)
     error = QtCore.pyqtSignal(tuple)
     result = QtCore.pyqtSignal(object)
-    progress = QtCore.pyqtSignal(int)
+    progress = QtCore.pyqtSignal(tuple)
 
 class Worker(QRunnable):
     
@@ -115,6 +115,8 @@ class GameUI(MyWindow):
     actionAgent = QtCore.pyqtSignal()
     freezeHuman = QtCore.pyqtSignal()
     unfreezeHuman = QtCore.pyqtSignal()
+    scored = QtCore.pyqtSignal(tuple)
+    gameEnd = QtCore.pyqtSignal(int)
     
     def __init__(self):
         super(GameUI, self).__init__()
@@ -144,6 +146,8 @@ class GameUI(MyWindow):
         self.timerStop.connect(self._timer_stop)
         self.boardGenerated.connect(self.UiGenBoard)
         self.boardDestroyed.connect(self.UiDestroyBoard)
+        self.scored.connect(self.game_score)
+        self.gameEnd.connect(self.game_end)
         self.actionAgent.connect(self.agent_exec_move)
         self.threadpool = QThreadPool()
 
@@ -188,7 +192,7 @@ class GameUI(MyWindow):
         if self.history.i_current == self.history.tot_nodes:
             self.freeze = False
 
-
+    @QtCore.pyqtSlot(tuple)
     def game_score(self, scores: Tuple[int]):
         """[summary]
         """
@@ -196,6 +200,19 @@ class GameUI(MyWindow):
         self.p2_score += scores[1]
         self.wdgts_UI3["score p1"].setPixmap(QPixmap(assets[f"img_{self.p1_score}"]))
         self.wdgts_UI3["score p2"].setPixmap(QPixmap(assets[f"img_{self.p2_score}"]))
+        
+        if (self.p1_score == 5) or (self.player_2 == 5):
+            self.gameEnd.emit(self.node.color)
+
+    @QtCore.pyqtSlot(int)
+    def game_end(self, color:int):
+        if color == BLACK:
+            player = 1
+        else:
+            player = 2
+        #self.qmessage = 
+        QMessageBox.information(self.stack3, "End of Game", f"Player {player} won!")
+        
         
 
     @staticmethod
@@ -285,6 +302,52 @@ class GameUI(MyWindow):
         return False
 
 
+    def isNodeTerminal(self):
+        current_board = self.node.grid
+        previous_board = self.history.lst_nodes[-2]
+        last_stone = np.argwhere((current_board - previous_board) != 0)
+        filtered_board = (current_board == self.node.color)
+        regOfInterest = filtered_board[last_stone[0] - 5 : last_stone[0] + 6, last_stone[1] - 5 : last_stone[1] + 6]
+        
+        k_10 = np.zeros((10,10))
+        k_10[4,:] = 1
+        r_conv_diag1 = np.convolve(regOfInterest, np.identity(10), "valid")
+        r_conv_diag2 = np.convolve(regOfInterest, np.rot90(np.identity(10)), "valid")
+        r_conv_row = np.convolve(regOfInterest, k_10, "valid")
+        r_conv_col = np.convolve(regOfInterest, np.rot90(k_10), "valid")
+        
+        if r_conv_diag1 >= 5:
+            start_x = start_y = 0
+            while (regOfInterest[start_y, start_x] == 0):
+                start_x += 1
+                start_y += 1
+            end_y = start_y + 5
+            end_x = start_x + 5
+        elif r_conv_diag2 >= 5:
+            start_x = 0
+            start_y = 9
+            while (regOfInterest[start_y, start_x] == 0):
+                start_x += 1
+                start_y -= 1
+            end_y = start_y - 5
+            end_x = start_x + 5
+        elif r_conv_row >= 5:
+            start_x = 0
+            start_y = 4
+            while (regOfInterest[start_y, start_x] == 0):
+                start_x += 1
+            end_y = start_y
+            end_x = start_x + 5
+        elif r_conv_col >= 5:
+            start_y = 0
+            start_x = 4
+            while (regOfInterest[start_y, start_x] == 0):
+                start_y += 1
+            end_y = start_y + 5
+            end_x = start_x
+        
+        
+
     def isposition_available(self) -> bool:
         """Checks if the position for the stone the player wants
         to play is empty.
@@ -346,6 +409,11 @@ class GameUI(MyWindow):
             stone.move(xy[0], xy[1])
             stone.show()
             self.W_whitestones.append(stone)
+        if self.node.captured_pairs > 0:
+            if self.node.color == BLACK:
+                self.scored.emit((self.node.captured_pairs, 0))
+            else:
+                self.scored.emit((0, self.node.captured_pairs))
 
 
     @QtCore.pyqtSlot()
@@ -467,7 +535,6 @@ class GameUI(MyWindow):
             self.current_coord = current_coordinates(event.pos())
             if not self.isposition_available():
                 self.unfreezeHuman.emit()
-                print("freeze status", self.freeze)
                 return
             
             self.timerStop.emit(self.stone)
@@ -485,4 +552,4 @@ class GameUI(MyWindow):
             if self.p2_type == "IA":
                 self.actionAgent.emit()
         
-        self.unfreezeHuman.emit()    
+        self.unfreezeHuman.emit()
