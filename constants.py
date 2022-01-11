@@ -11,13 +11,20 @@ BLACK = 1
 WHITE = -1
 
 # kernels to check if there is capture
-k_diag = np.array([[BLACK, 0,     0,     0],
-                   [0,     WHITE, 0,     0],
-                   [0,     0,     WHITE, 0],
-                   [0,     0,     0,     BLACK]])
+k_diag1 = np.array([[[-1, 0,  0,  0],
+                     [0,  1,  0,  0],
+                     [0,  0,  1,  0],
+                     [0,  0,  0, -1]]])
 
-k_line = np.array([[-1, 1, 1, -1]])
-k_captures = {"line": k_line, "column": np.rot90(k_line), "diag1": k_diag, "diag2": np.rot90(k_diag)}
+k_diag2 = np.array([[[0,  0, 0, -1],
+                     [0,  0, 1,  0],
+                     [0,  1, 0,  0],
+                     [-1, 0, 0,  0]]])
+
+
+k_line = np.array([[[-1, 1, 1, -1]]])
+k_col = np.array([[[1], [1], [1], [1]]])
+k_captures = {"line": k_line, "column": k_col, "diag1": k_diag1, "diag2": k_diag2}
 
 # kernels to check if there is a free three
 k_freethree = np.array([1, 2, 2, 2, 2, 1])
