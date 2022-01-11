@@ -48,3 +48,7 @@ def iscapture_position(grid:np.array, current_pos:np.array, color:int) -> List[T
     
     res = [r_conv_c1, r_conv_c2, r_conv_l1, r_conv_l2, r_conv_d1, r_conv_d2, r_conv_d3, r_conv_d4]
     return [pair_to_del[ii] for ii, r_conv in enumerate(res) if r_conv == 4]
+
+
+def issujbect_to_capture():
+    

@@ -16,8 +16,7 @@ k_diag = np.array([[BLACK, 0,     0,     0],
                    [0,     0,     WHITE, 0],
                    [0,     0,     0,     BLACK]])
 
-k_line = np.array([[BLACK, WHITE, WHITE, BLACK]])
-
+k_line = np.array([[-1, 1, 1, -1]])
 k_captures = {"line": k_line, "column": np.rot90(k_line), "diag1": k_diag, "diag2": np.rot90(k_diag)}
 
 # kernels to check if there is a free three
