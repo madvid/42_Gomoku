@@ -76,12 +76,6 @@ def get_diag1_idx(yx:np.array):
 def get_diag2_idx(yx:np.array):
     return (np.arange(4, -5, -1) + yx[0]).astype('int8'), (np.arange(-4, 5) + yx[1]).astype('int8')
 
-
-def subviews_nxp(board:np.array, np:tuple, axis:int=0, b_diag:bool=False):
-    sub_views_shape = (max(board.shape) - 4, np[0], np[1])
-    sub_views_strides = (board.strides[0] + b_diag * board.strides[1], board.strides[0], board.strides[1])
-    sub_views = as_strided(board, sub_views_shape, sub_views_strides)
-    return sub_views
 # =========================================================================== #
 #                           | Classes definition |                            #
 # =========================================================================== #
@@ -218,7 +212,7 @@ class GameUI(MyWindow):
         else:
             player = 2
         #self.qmessage = 
-        QMessageBox.information(self.stack3, "End of Game", f"Player {player} won!")
+        QMessageBox.information("End of Game", f"Player {player} won!")
         
         
 
@@ -308,79 +302,6 @@ class GameUI(MyWindow):
             return True
         return False
 
-
-    def isNodeTerminal(self):
-        current_board = self.node.grid
-        previous_board = self.history.lst_nodes[-2]
-        yx = np.argwhere((current_board - previous_board) != 0)
-        
-        ## Checking the row
-        # Looking for the starting indexes 
-        dy = dx = 0
-        while current_board[yx[0] + dy, yx[1] + dx] == self.node.color:
-            dy -= 1
-        dy += 1
-        # Measuring the sequence length along the row
-        lr = 0
-        for ii in range(5):
-            lr += current_board[yx[0] + dy + ii, yx[1] + dx]
-        
-        ## Checking the column
-        # Looking for the starting indexes 
-        dy = dx = 0
-        while current_board[yx[0] + dy, yx[1] + dx] == self.node.color:
-            dx -= 1
-        dx += 1
-        # Measuring the sequence length along the column
-        lc = 0
-        for ii in range(5):
-            lc += current_board[yx[0] + dy, yx[1] + dx + ii]
-
-        ## Checking the 1st diagonal
-        # Looking for the starting indexes 
-        dy = dx = 0
-        while current_board[yx[0] + dy, yx[1] + dx] == self.node.color:
-            dy, dx = dy - 1, dx - 1
-        dy, dx = dy + 1, dx + 1
-        # Measuring the sequence length along the 1st diag
-        ld1 = 0
-        for ii in range(5):
-            ld1 += current_board[yx[0] + dy + ii, yx[1] + dx + ii]
-
-        ## Checking the 2nd diagonal
-        # Looking for the starting indexes 
-        dy = dx = 0
-        while current_board[yx[0] + dy, yx[1] + dx] == self.node.color:
-            dy, dx = dy - 1, dx + 1
-        dy, dx = dy + 1, dx - 1
-        # Measuring the sequence length along the 2nd diag
-        ld2 = 0
-        for ii in range(5):
-            ld2 += current_board[yx[0] + dy + ii, yx[1] + dx - ii]
-
-        if lr == 5:
-            sub_views = subviews_nxp(current_board[], (5, 5), axis = 0, b_diag = False)
-            convolve(sub_views, self.node.color * k_captures["column"], "valid")
-            convolve(sub_views, self.node.color * k_captures["diag1"], "valid")
-            convolve(sub_views, self.node.color * k_captures["diag2"], "valid")
-        elif lc == 5:
-            sub_views = subviews_nxp(current_board[], (5, 5), axis = 1, b_diag = False)
-            convolve(sub_views, self.node.color * k_captures["line"], "valid")
-            convolve(sub_views, self.node.color * k_captures["diag1"], "valid")
-            convolve(sub_views, self.node.color * k_captures["diag2"], "valid")
-        elif ld1 == 5:
-            sub_views = subviews_nxp(current_board[], b_diag = True)
-            convolve(sub_views, self.node.color * k_captures["line"], "valid")
-            convolve(sub_views, self.node.color * k_captures["column"], "valid")
-            convolve(sub_views, self.node.color * k_captures["diag2"], "valid")
-        elif ld2 == 5:
-            sub_views = subviews_nxp(current_board[].T, b_diag = True)
-            convolve(sub_views, self.node.color * k_captures["line"], "valid")
-            convolve(sub_views, self.node.color * k_captures["column"], "valid")
-            convolve(sub_views, self.node.color * k_captures["diag1"], "valid")
-
-        
-        
 
     def isposition_available(self) -> bool:
         """Checks if the position for the stone the player wants

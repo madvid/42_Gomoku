@@ -1,16 +1,20 @@
 from __future__ import annotations
 import numpy as np
+from scipy.signal import convolve, convolve2d
+from numpy.lib.stride_tricks import as_strided
 import copy
 from typing import Tuple, List
 from heapq import *
 
 from game.metrics import *
-from scipy.signal import convolve2d
 from game.rules import iscapture_position, remove_opponent_pair
 np.set_printoptions(linewidth = 200)
 
-BLACK = 1
-WHITE = -1
+# =========================================================================== #
+#                          | constants definition |                           #
+# =========================================================================== #
+
+from constants import BLACK, WHITE, k_captures
 k_croix = np.array([[1, 0, 1, 0, 1],
                     [0, 1, 1, 1, 0],
                     [1, 1, 1, 1, 1],
@@ -31,6 +35,26 @@ k_nxt_opponent = np.array([[0,  0,  0,  0, 0],
 
 k_5_stones = np.array([1, 1, 1, 1, 1])
 
+# =========================================================================== #
+#                          | functions definition |                           #
+# =========================================================================== #
+
+def subviews_nxp(board:np.array, np:tuple, axis:int=0, b_diag:bool=False):
+    if axis == 0 and not b_diag:
+        d = board.shape[0] - np[0] + 1
+    elif axis == 1 and not b_diag:
+        d = board.shape[1] - np[1] + 1
+    elif b_diag:
+        d = board.shape[0] - max(np) + 1
+    sub_views_shape = (d, np[0], np[1])
+    sub_views_strides = (board.strides[1] + b_diag * board.strides[0], board.strides[0], board.strides[1])
+    sub_views = as_strided(board, sub_views_shape, sub_views_strides)
+    return sub_views
+
+
+# =========================================================================== #
+#                          | classes definition |                           #
+# =========================================================================== #
 class Node():
     # Global attributes of all nodes. Generated once before building the tree.
     metric: dict = {BLACK: np.max, WHITE: np.min} # A dict containing the scoring metrics for black and white
@@ -41,7 +65,7 @@ class Node():
         self.current_pos = pos # Should be the padded current position (true position on real board + (4,4))
         self.color = color # Color of the player generating this move.
         self.nb_free_three = None # Attribute updated after the creation of the instance.
-        self.isterminal = None
+        self.isterminal = self.isNodeTerminal()
         self.stone_seq = {BLACK:[], WHITE:[]} # FIXME: REMOVE ME
         self.scoreboard = self.init_scoreboard()
         self.b_captured = 0
@@ -225,6 +249,114 @@ class Node():
 
     def __gt__(self, other):
         return abs(self.scoreboard.sum()) * self.color > abs(other.scoreboard.sum()) * other.color
+
+    def isNodeTerminal(self) -> bool:
+        """[summary]
+        ...
+        Returns:
+            bool: [description]
+        """
+        current_board = self.grid
+        if self.parent is None:
+            return False
+        previous_board = self.parent.grid
+        y0, x0 = np.argwhere((current_board - previous_board) != 0)[0]
+
+        ## Checking the row
+        # Looking for the starting indexes 
+        # Measuring the sequence length along the row
+        y, x = y0, x0
+        while current_board[y, x] == self.color:
+            x -= 1
+        x += 1
+        lr = 0
+        for ii in range(5):
+            lr += current_board[y, x + ii]
+        if lr == 5:
+            # generation des subviews pour passage du kernel colonne
+            sub_views1 = subviews_nxp(current_board[y - 2 : y + 3, x : x + 5], (5, 1), axis = 1, b_diag = False)
+            r_convs = np.squeeze(convolve(sub_views1, self.color * k_captures["column"], "valid"))
+            # generation des subviews pour passage des kernels diag1 et diag2
+            sub_views2 = subviews_nxp(current_board[y - 2: y + 3, x - 2 : x + 7], (5, 4), axis = 1, b_diag = False)
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views2, self.color * k_captures["diag1"], "valid")))
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views2, self.color * k_captures["diag2"], "valid")))
+
+            if any([conv == 4 for conv in r_convs]):
+                return False
+            return True
+
+        ## Checking the column
+        # Looking for the starting indexes 
+        y, x = y0, x0
+        while current_board[y, x] == self.color:
+            y -= 1
+        y += 1
+        # Measuring the sequence length along the column
+        lc = 0
+        for ii in range(5):
+            lc += current_board[y + ii, x]
+        if lc == 5:
+            sub_views1 = subviews_nxp(current_board[y : y + 5, x - 2 : x + 3], (1, 5), axis = 1, b_diag = False)
+            r_convs = np.squeeze(convolve(sub_views1, self.color * k_captures["line"], "valid"))
+            sub_views2 = subviews_nxp(current_board[y - 2 : y + 7, x - 2 : x + 3], (4, 5), axis = 1, b_diag = False)
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views2, self.color * k_captures["diag1"], "valid")))
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views2, self.color * k_captures["diag2"], "valid")))
+            if any([conv == 4 for conv in r_convs]):
+                return False
+            return True
+
+        ## Checking the 1st diagonal
+        # Looking for the starting indexes 
+        y, x = y0, x0
+        while current_board[y, x] == self.color:
+            y, x = y - 1, x - 1
+        y, x = y + 1, x + 1
+        # Measuring the sequence length along the 1st diag
+        ld1 = 0
+        for ii in range(5):
+            ld1 += current_board[y + ii, x + ii]
+        if ld1 == 5:
+            sub_views1 = subviews_nxp(current_board[y : y + 5, x : x + 5], (1, 5), b_diag = True)
+            r_convs = np.squeeze(convolve(sub_views1, self.color * k_captures["line"], "valid"))
+
+            sub_views2 = subviews_nxp(current_board[y - 2 : y + 7, x : x + 5], (5, 1), b_diag = True)
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views2, self.color * k_captures["column"], "valid")))
+
+            sub_views3 = subviews_nxp(current_board[y - 2 : y + 6, x - 1 : x + 7], (4, 4), b_diag = True)
+            sub_views3 = np.append(sub_views3, subviews_nxp(current_board[y - 1 : y + 7, x - 2 : x + 6], (4, 4), b_diag = True), axis = 0)
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views3, self.color * k_captures["diag2"], "valid")))
+
+            if any([conv == 4 for conv in r_convs]):
+                return False
+            return True
+
+        ## Checking the 2nd diagonal
+        # Looking for the starting indexes 
+        y, x = y0, x0
+        while current_board[y, x] == self.color:
+            y, x = y - 1, x + 1
+        y, x = y + 1, x - 1
+        # Measuring the sequence length along the 2nd diag
+        ld2 = 0
+        for ii in range(5):
+            ld2 += current_board[y + ii, x - ii]
+
+        if ld2 == 5:
+            flipped = np.fliplr(current_board)
+            sub_views1 = subviews_nxp(flipped[y : y + 5, x : x + 5], (1, 5), b_diag = True)
+            r_convs = convolve(sub_views1, self.color * k_captures["line"], "valid")
+
+            sub_views2 = subviews_nxp(flipped[y - 2 : y + 7, x : x + 5], (5, 1), b_diag = True)
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views2, self.color * k_captures["column"], "valid")))
+
+            sub_views3 = subviews_nxp(flipped[y - 2 : y + 6, x - 1 : x + 7], (4, 4), b_diag = True)
+            sub_views3 = np.append(sub_views3, subviews_nxp(flipped[y - 1 : y + 7, x - 2 : x + 6], (4, 4), b_diag = True), axis = 0)
+            r_convs = np.append(r_convs, np.squeeze(convolve(sub_views3, self.color * k_captures["diag1"], "valid")))
+
+            if any([conv == 4 for conv in r_convs]):
+                return False
+            return True
+        return False
 
 
 def stone_sum(grid: np.ndarray) -> int:
