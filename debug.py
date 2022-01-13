@@ -1,0 +1,21 @@
+DEBUG = False
+
+def print_gameUI_attr(obj):
+    print("#" * 50)
+    print("self.stone = ", obj.stone)
+    print("self.W_whitestones = ", obj.W_whitestones)
+    print("self.W_blackstones = ", obj.W_blackstones)
+    print("self.player_1 = ", obj.player_1)
+    print("self.player_2 = ", obj.player_2)
+    print("self.p1_type = ", obj.p1_type)
+    print("self.p2_type = ", obj.p2_type)
+    print("self.count_black = ", obj.count_black)
+    print("self.count_white = ", obj.count_white)
+    print("self.wdgts_UI3[timer 1]  = ", obj.wdgts_UI3["timer 1"].isActive())
+    print("self.wdgts_UI3[timer 2]  = ", obj.wdgts_UI3["timer 2"].isActive())
+    print("self.start_black = ", obj.count_black)
+    print("self.start_white = ", obj.count_white)
+    print("self.p1_score = ", obj.p1_score)
+    print("self.p2_score = ", obj.p2_score)
+    print("self.freeze = ", obj.freeze)
+    print("#" * 50)

@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtGui, QtCore
 import sys
 
+import debug
+
 # =========================================================================== #
 #                          | constants definition |                           #
 # =========================================================================== #
@@ -23,5 +25,7 @@ if __name__ == "__main__":
 	#game_mode = {"PvP": 1, "PvIA": 2, "IAvIA": 3}
 	app = QApplication(sys.argv)
 	w_game = GameUI()
+	if debug.DEBUG:
+		debug.print_gameUI_attr(w_game)
 	w_game.show()
 	sys.exit(app.exec())

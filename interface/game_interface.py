@@ -2,7 +2,7 @@
 # ____________________  |Importation des lib/packages|   ____________________ #
 # =========================================================================== #
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, \
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QLabel, \
     QVBoxLayout, QWidget, QGridLayout, QStackedWidget, QHBoxLayout, QVBoxLayout
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
@@ -16,11 +16,7 @@ from typing import Tuple
 # =========================================================================== #
 # ___________________________    |CONSTANTES|    ____________________________ #
 # =========================================================================== #
-from constants import TOP_LEFT_X, TOP_LEFT_Y, BOTTOM_RIGHT_X, BOTTOM_RIGHT_Y
-
-
-BLACK = 1
-WHITE = -1
+from constants import TOP_LEFT_X, TOP_LEFT_Y, BOTTOM_RIGHT_X, BOTTOM_RIGHT_Y, BLACK, WHITE, MSEC_2_SEC
 
 W_WIDTH = 1080
 W_HEIGHT = 940
@@ -171,6 +167,7 @@ class MyWindow(QWidget):
         self.W_blackstones = []
         self.coord_whitestones = []
         self.coord_blackstones = []
+        self.suggested_stone = None
 
         # Related to character selection on screen 2
         self.player_1 = None
@@ -193,8 +190,10 @@ class MyWindow(QWidget):
         # Timer related
         self.count_black = 0
         self.count_white = 0
-        self.start_black = False
-        self.start_white = False
+                
+        # move suggestion related
+        self.move_suggest_p1 = False
+        self.move_suggest_p2 = False
 
 
     def stack1UI(self):
@@ -251,6 +250,11 @@ class MyWindow(QWidget):
                           "button play": QPushButton("", self.stack2),
                           "button back": QPushButton("", self.stack2)
                           }
+        self.wdgts_UI2["move suggest 1"] = QCheckBox("", self.stack2)
+        self.wdgts_UI2["move suggest 2"] = QCheckBox("", self.stack2)
+        self.wdgts_UI2["move suggest 1"].setEnabled(False)
+        self.wdgts_UI2["move suggest 2"].setEnabled(False)
+        
         # Display logo
         image_select = QPixmap("assets/character_selection.png")
         self.wdgts_UI2["header"].setPixmap(image_select)
@@ -264,7 +268,6 @@ class MyWindow(QWidget):
             self.wdgts_UI2[f"character {ii}"].setCursor(QCursor(QtCore.Qt.PointingHandCursor))
             self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
             self.wdgts_UI2[f"character {ii}"].setFixedSize(QtCore.QSize(*WIDGETS_WH["wdgt_character"]))
-
         
         for key, fname in zip(["play", "back"], ["PLAY", "BACK"]):
             self.wdgts_UI2[f"button {key}"].setIcon(QtGui.QIcon(f'assets/{fname}.png'))
@@ -272,19 +275,26 @@ class MyWindow(QWidget):
             self.wdgts_UI2[f"button {key}"].setStyleSheet(dct_stylesheet[f"{key}_btn"])
             self.wdgts_UI2[f"button {key}"].setFixedSize(210, 70)
         
-
+        self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 1"].setIconSize(QtCore.QSize(80, 67))
+        self.wdgts_UI2["move suggest 1"].setFixedSize(90, 70)
+        self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 2"].setIconSize(QtCore.QSize(80, 67))
+        self.wdgts_UI2["move suggest 2"].setFixedSize(90, 70)
+        
         # Placing all the widgets in the select character frame:
-        grid = QGridLayout()
-        grid.addWidget(self.wdgts_UI2["header"], 0, 0, 1, 6, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["character 1"], 1, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
-        grid.addWidget(self.wdgts_UI2["character 2"], 1, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["character 3"], 1, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI2["character 4"], 3, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
-        grid.addWidget(self.wdgts_UI2["character 5"], 3, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["character 6"], 3, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI2["button play"], 5, 4, 1, 2, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["button back"], 5, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
-
+        self.grid2 = QGridLayout()
+        self.grid2.addWidget(self.wdgts_UI2["header"], 0, 0, 1, 6, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["character 1"], 1, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
+        self.grid2.addWidget(self.wdgts_UI2["character 2"], 1, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["character 3"], 1, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
+        self.grid2.addWidget(self.wdgts_UI2["character 4"], 3, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
+        self.grid2.addWidget(self.wdgts_UI2["character 5"], 3, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["character 6"], 3, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
+        self.grid2.addWidget(self.wdgts_UI2["move suggest 1"], 5, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["move suggest 2"], 5, 3, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["button play"], 5, 4, 2, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["button back"], 5, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
 
         self.wdgts_UI2["character 1"].clicked.connect(self.select_character_1)
         self.wdgts_UI2["character 2"].clicked.connect(self.select_character_2)
@@ -292,10 +302,12 @@ class MyWindow(QWidget):
         self.wdgts_UI2["character 4"].clicked.connect(self.select_character_4)
         self.wdgts_UI2["character 5"].clicked.connect(self.select_character_5)
         self.wdgts_UI2["character 6"].clicked.connect(self.select_character_6)
+        self.wdgts_UI2["move suggest 1"].clicked.connect(self.game_move_suggest_1)
+        self.wdgts_UI2["move suggest 2"].clicked.connect(self.game_move_suggest_2)
         self.wdgts_UI2["button play"].clicked.connect(self.game_play)
         self.wdgts_UI2["button back"].clicked.connect(self.game_back)
 
-        self.stack2.setLayout(grid)
+        self.stack2.setLayout(self.grid2)
 
 
     def stack3UI(self):
@@ -351,10 +363,6 @@ class MyWindow(QWidget):
         
         self.wdgts_UI3["timer 1"].timeout.connect(self.showtime_timer1)
         self.wdgts_UI3["timer 2"].timeout.connect(self.showtime_timer2)
-        #self.wdgts_UI3["timer 1"].setInterval(1) # set the interval to 1 ms
-        #self.wdgts_UI3["timer 2"].setInterval(1) # set the interval to 1 ms
-        self.wdgts_UI3["timer 1"].start(10)
-        self.wdgts_UI3["timer 2"].start(10)
         
         self.wdgts_UI3["board"].adjustSize()
         self.wdgts_UI3["label p1"].adjustSize()
@@ -392,12 +400,38 @@ class MyWindow(QWidget):
     def game_pvp(self):
         self.p1_type = "Human"
         self.p2_type = "Human"
+        self.wdgts_UI2["move suggest 1"].setEnabled(True)
+        self.wdgts_UI2["move suggest 2"].setEnabled(True)
         self.Stack.setCurrentIndex(1)
+
+
+    def game_move_suggest_1(self):
+        if self.move_suggest_p1 == False:
+            self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/pixel_hal-removebg.png"))
+            self.move_suggest_p1 = True
+        else:
+            self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+            self.move_suggest_p1 = False
+
+
+    def game_move_suggest_2(self):
+        if self.move_suggest_p2 == False:
+            self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/pixel_hal-removebg.png"))
+            self.move_suggest_p2 = True
+        else:
+            self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+            self.move_suggest_p2 = False
 
 
     def game_pva(self):
         self.p1_type = "Human"
         self.p2_type = "IA"
+        self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 1"].setEnabled(False)
+        self.wdgts_UI2["move suggest 1"].setChecked(False)
+        self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 2"].setEnabled(False)
+        self.wdgts_UI2["move suggest 2"].setChecked(False)
         self.Stack.setCurrentIndex(1)
 
 
@@ -409,7 +443,13 @@ class MyWindow(QWidget):
         for ii in range(1,7):
             CHARACTERS[f"character {ii}"]["check"] = False
             self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
-
+        
+        self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 1"].setChecked(False)
+        self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 2"].setChecked(False)
+        self.move_suggest_p1 = False
+        self.move_suggest_p2 = False
         self.Stack.setCurrentIndex(0)
 
 
@@ -437,6 +477,7 @@ class MyWindow(QWidget):
 
     def game_play(self):
         if (self.player_1 != None) and (self.player_2 != None):
+            self.wdgts_UI3["timer 1"].start(10)
             self.Stack.setCurrentIndex(2)
 
 
@@ -453,15 +494,15 @@ class MyWindow(QWidget):
 
 
     def showtime_timer1(self):
-        if self.start_black:
+        if self.wdgts_UI3["timer 1"].isActive():
             self.count_black += 10
             # getting and displaying text from count
-            self.wdgts_UI3["display timer 1"].setText(str(self.count_black / 1000) + " s")
+            self.wdgts_UI3["display timer 1"].setText(f"{self.count_black * MSEC_2_SEC:.2f}  s")
 
     def showtime_timer2(self):
-        if self.start_white:
+        if self.wdgts_UI3["timer 2"].isActive():
             self.count_white += 10
-            self.wdgts_UI3["display timer 2"].setText(str(self.count_white / 1000) + " s")
+            self.wdgts_UI3["display timer 2"].setText(f"{self.count_white * MSEC_2_SEC:.2f}  s")
 
 
     def select_character_1(self):

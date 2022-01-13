@@ -10,6 +10,8 @@ import numpy as np
 BLACK = 1
 WHITE = -1
 
+MSEC_2_SEC = 0.001
+
 # kernels to check if there is capture
 k_diag1 = np.array([[[-1, 0,  0,  0],
                      [0,  1,  0,  0],

@@ -157,4 +157,8 @@ class Solver():
                 #print("Best nodes = ", nxt[np.argwhere(np.array(next_moves) == min_score)[0][0]])
                 #print("Best nodes position = ", nxt[np.argwhere(np.array(next_moves) == min_score)[0][0].current_pos])
                 return nxt[np.argwhere(np.array(next_moves) == min_score)[0][0]]
+            
+    def find_best_next_move(self) -> Node:
+        """ Return the best next moves for the current player"""
+        pass
 
