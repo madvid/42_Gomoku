@@ -11,6 +11,7 @@ from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import QObject, QEvent, QRunnable, QThreadPool
 
 from typing import Tuple, List
+from debug import print_gameUI_attr
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 from scipy.signal import convolve, convolve2d
@@ -23,6 +24,7 @@ from game.rules import iscapture_position, remove_opponent_pair
 
 
 import time # TO REMOVE
+import debug # TO REMOVE
 
 # =========================================================================== #
 #                          | constants definition |                           #
@@ -113,7 +115,8 @@ class GameUI(MyWindow):
     timerStart = QtCore.pyqtSignal(int)
     boardGenerated = QtCore.pyqtSignal()
     boardDestroyed = QtCore.pyqtSignal()
-    actionAgent = QtCore.pyqtSignal()
+    moveAgent = QtCore.pyqtSignal()
+    suggestAgent = QtCore.pyqtSignal()
     freezeHuman = QtCore.pyqtSignal()
     unfreezeHuman = QtCore.pyqtSignal()
     scored = QtCore.pyqtSignal(tuple)
@@ -131,7 +134,6 @@ class GameUI(MyWindow):
         # Initialization of the tree.
         Node.metric = {BLACK: sum_kern3, WHITE: sum_kern3}
         self.node = Node(None, np.zeros((SIZE + 8,SIZE + 8), dtype=np.int8), WHITE)
-        self.node.nb_free_three = 0
 
         self.i_round = 0
         self.history = History()
@@ -149,22 +151,38 @@ class GameUI(MyWindow):
         self.boardDestroyed.connect(self.UiDestroyBoard)
         self.scored.connect(self.game_score)
         self.gameEnd.connect(self.game_end)
-        self.actionAgent.connect(self.agent_exec_move)
+        self.moveAgent.connect(self.agent_exec_move)
+        self.suggestAgent.connect(self.agent_suggest_move)
         self.threadpool = QThreadPool()
 
 
     def game_quit(self):
         super().game_quit()
+        # Board creation and player related attributes
         self.p1_score = 0
         self.p2_score = 0
+        self.freeze = False
+        self.stone = BLACK
+
+        # instance of Solver = generate the accessible moves from current node
+        self.agent = Solver(depth=1)
+        
+        # Initialization of the tree.
         self.node = Node(None, np.zeros((SIZE + 8,SIZE + 8), dtype=np.int8), WHITE)
-        self.node.nb_free_three = 0
 
         self.i_round = 0
         self.history = History()
         self.history.add_nodes([self.node])
         
-        self.agent = Solver(depth=1)
+        # Connection of signals to the corresponding slots
+        self.timerStop.emit(BLACK)
+        self.timerStop.emit(WHITE)
+        self.timerReset.emit(BLACK)
+        self.timerReset.emit(WHITE)
+        
+
+        if debug.DEBUG:
+            debug.print_gameUI_attr(self)
 
 
     def game_play(self):
@@ -172,26 +190,27 @@ class GameUI(MyWindow):
         self.timerStart.emit(self.stone) # starting the timer of the 1st player as soon the game scene is displayed
 
 
+    @QtCore.pyqtSlot()
     def game_backward(self):
         """[summary]
         """
         if self.history.i_current > 0:
             self.freeze = True
             self.history.i_current -= 1
-            #self.grid = self.history.lst_nodes[self.history.i_current]
             self.boardDestroyed.emit()
 
 
+    @QtCore.pyqtSlot()
     def game_forward(self):
         """[summary]
         """
         if self.history.i_current + 1 < self.history.tot_nodes:
             self.history.i_current += 1
-            #self.grid = self.history.lst_nodes[self.history.i_current]
             self.boardDestroyed.emit()
         
         if self.history.i_current == self.history.tot_nodes:
             self.freeze = False
+
 
     @QtCore.pyqtSlot(tuple)
     def game_score(self, scores: Tuple[int]):
@@ -205,16 +224,23 @@ class GameUI(MyWindow):
         if (self.p1_score == 5) or (self.player_2 == 5):
             self.gameEnd.emit(self.node.color)
 
+
     @QtCore.pyqtSlot(int)
     def game_end(self, color:int):
         if color == BLACK:
-            player = 1
+            player = "black"
         else:
-            player = 2
-        #self.qmessage = 
-        QMessageBox.information("End of Game", f"Player {player} won!")
-        
-        
+            player = "white"
+        self.messagebox = QMessageBox(self)
+        self.messagebox.setWindowTitle("End of Game")
+        self.messagebox.setText(f"Player {player} won!")
+        self.messagebox.setInformativeText("Press Ok to return to game menu.")
+        self.messagebox.setStyleSheet("background-color: white;")
+        self.messagebox.setIcon(QMessageBox.Information)
+        self.messagebox.setStandardButtons(QMessageBox.Ok)
+        self.messagebox.buttonClicked.connect(self.game_quit)
+        self.messagebox.exec()
+
 
     @staticmethod
     def _DEPRECATED_subboard_4_Conv2D(grid, k_shape:tuple, stride:tuple) -> np.array:
@@ -270,7 +296,7 @@ class GameUI(MyWindow):
             return True
         return False
 
-            
+
     @staticmethod
     def isdoublefreethree_position(yx:np.array, grid:np.array, color:int) -> bool:
         """ Verifies if the position yx on board is a double free three position.
@@ -339,12 +365,9 @@ class GameUI(MyWindow):
     def UiGenBoard(self):
         """
         """
-        #self.coord_blackstones = np.argwhere(self.node.grid[4 : -4, 4 : -4] == BLACK)
-        #self.coord_whitestones = np.argwhere(self.node.grid[4 : -4, 4 : -4] == WHITE)
         self.coord_blackstones = np.argwhere(self.history.lst_nodes[self.history.i_current][4 : -4, 4 : -4] == BLACK)
         self.coord_whitestones = np.argwhere(self.history.lst_nodes[self.history.i_current][4 : -4, 4 : -4] == WHITE)
-        
-        
+
         for bs in self.coord_blackstones:
             stone = QLabel("", self.wdgts_UI3["board"])
             stone.setStyleSheet("background-color: transparent;")
@@ -364,11 +387,35 @@ class GameUI(MyWindow):
             stone.move(xy[0], xy[1])
             stone.show()
             self.W_whitestones.append(stone)
+        
+        # Suggestion of the next position if move suggestion is activated for player 1
+        if (self.stone == BLACK) and self.move_suggest_p1:
+            self.suggested_stone = QLabel("", self.wdgts_UI3["board"])
+            self.suggested_stone.setStyleSheet("background-color: transparent;")
+            px_stone = QPixmap(assets["black_stone"]).scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+            self.suggested_stone.setPixmap(px_stone)
+            self.suggested_stone.fill(QtGui.QColor(0, 0, 0, 125))
+            xy = (31 * self.suggested_coord[::-1] + 6).astype('int32')
+            self.suggested_stone.move(xy[0], xy[1])
+            self.suggested_stone.show()
+        
+        # Suggestion of the next position if move suggestion is activated for player 2
+        if (self.stone == WHITE) and self.move_suggest_p2:
+            self.suggested_stone = QLabel("", self.wdgts_UI3["board"])
+            px_stone = QPixmap(assets["white_stone"]).scaled(26, 26, QtCore.Qt.KeepAspectRatio)
+            self.suggested_stone.setPixmap(px_stone)
+            self.suggested_stone.fill(QtGui.QColor(0, 0, 0, 125))
+            xy = (31 * self.suggested_coord[::-1] + 6).astype('int32')
+            self.suggested_stone.move(xy[0], xy[1])
+            self.suggested_stone.show()
+        
         if self.node.captured_pairs > 0:
             if self.node.color == BLACK:
                 self.scored.emit((self.node.captured_pairs, 0))
             else:
                 self.scored.emit((0, self.node.captured_pairs))
+        if self.node.isterminal:
+            self.gameEnd.emit(self.node.color)
 
 
     @QtCore.pyqtSlot()
@@ -383,6 +430,9 @@ class GameUI(MyWindow):
             self.W_blackstones[ii].deleteLater()
         del(self.W_blackstones)
         
+        # Pending feature: position suggestion for human players
+        #del(self.W_suggested_stone)
+        
         self.W_blackstones = []
         self.W_whitestones = []
         self.boardGenerated.emit()
@@ -390,17 +440,17 @@ class GameUI(MyWindow):
     @QtCore.pyqtSlot(int)
     def _timer_start(self, color:int):
         if color is BLACK:
-            self.start_black = True
+            self.wdgts_UI3["timer 1"].start(10)
         if color is WHITE:
-            self.start_white = True
+            self.wdgts_UI3["timer 2"].start(10)
 
 
     @QtCore.pyqtSlot(int)
     def _timer_stop(self, color:int):
         if color is BLACK:
-            self.start_black = False
+            self.wdgts_UI3["timer 1"].stop()
         if color is WHITE:
-            self.start_white = False
+            self.wdgts_UI3["timer 2"].stop()
 
 
     @QtCore.pyqtSlot(int, int)
@@ -418,6 +468,7 @@ class GameUI(MyWindow):
            self.wdgts_UI3[f"display timer 2"].setText("  00.00 s")
            self.count_white = 0
 
+
     @QtCore.pyqtSlot(Node)
     def _catch_node_(self, node):
         self.node = node
@@ -426,7 +477,6 @@ class GameUI(MyWindow):
 
     @QtCore.pyqtSlot()
     def agent_exec_move(self):
-        #self.node = self.agent.find_best_move(self.node)
         worker = Worker(self.node, self.agent)
         worker.signals.result.connect(self._catch_node_)
         worker.signals.finished.connect(self.UiDestroyBoard)
@@ -442,7 +492,13 @@ class GameUI(MyWindow):
             # Changing self.stone color and incrementing round_counter
             self.stone = -self.stone
             self.i_round += 1
-            #self.boardDestroyed.emit()
+
+
+    @QtCore.pyqtSlot()
+    def agent_suggest_move(self):
+        suggested_node =self.agent.find_best_next_move(self.node)
+        self.suggested_coord = np.argwhere((suggested_node.grid - self.node.grid) != 0)
+        
 
 
     @QtCore.pyqtSlot()
@@ -497,14 +553,19 @@ class GameUI(MyWindow):
             self.node = self.create_node()
             self.history.add_nodes([self.node])
             self.boardDestroyed.emit()
-
-            # Changing self.stone color and incrementing round_counter
-            self.i_round += 1
-            self.stone = -self.stone
             
-            self.timerReset.emit(self.stone)
-            self.timerStart.emit(self.stone)
-            if self.p2_type == "IA":
-                self.actionAgent.emit()
-        
+            if not self.node.isterminal:
+                # Changing self.stone color and incrementing round_counter
+                self.i_round += 1
+                self.stone = -self.stone
+                # Reset and starting of the timer of the IA
+                if self.move_suggest_p1:
+                    self.suggestAgent.emit()
+                if self.move_suggest_p2:
+                    self.suggestAgent.emit()
+                self.timerReset.emit(self.stone)
+                self.timerStart.emit(self.stone)
+                if self.p2_type == "IA":
+                    # Calling agent for action (just asking him it move)
+                    self.moveAgent.emit()
         self.unfreezeHuman.emit()
