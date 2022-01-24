@@ -77,9 +77,11 @@ See ```gomoku.pdf``` file in the folder **doc_assets** for more details about th
 Here I will detailed how the program works
 ### From launch of Gomoku to the start of the game
 🚧 ... redaction pending ...🚧
+
 ![functional_graph1](doc_assets/gomoku_networkgraph_1.png)
 ### Outside the board game zone
 🚧 ... redaction pending ...🚧
+
 ![functional_graph2](doc_assets/gomoku_networkgraph_2.png)
 ### Inside the board game zone
 🚧 ... redaction pending ...🚧
