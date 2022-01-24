@@ -2,24 +2,27 @@
 # ____________________  |Importation des lib/packages|   ____________________ #
 # =========================================================================== #
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, \
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QLabel, \
     QVBoxLayout, QWidget, QGridLayout, QStackedWidget, QHBoxLayout, QVBoxLayout
-from PyQt5.QtGui import QPixmap
 from PyQt5 import QtGui, QtCore
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import QTimer
 import numpy as np
 import numpy.typing as npt
 from math import fabs
 from typing import Tuple
 
-
 # =========================================================================== #
 # ___________________________    |CONSTANTES|    ____________________________ #
 # =========================================================================== #
+from constants import TOP_LEFT_X, TOP_LEFT_Y, BOTTOM_RIGHT_X, BOTTOM_RIGHT_Y, BLACK, WHITE, MSEC_2_SEC
+
 W_WIDTH = 1080
-W_HEIGHT = 720
+W_HEIGHT = 940
 MAIN_BTN_WIDTH = int(0.15 * W_WIDTH)
 MAIN_BTN_HEIGHT = int(0.8 * W_HEIGHT)
+
 WIDGETS_WH = {"stack1_logo": [int(W_WIDTH), int(0.4 * W_HEIGHT)],
               "button pvp": [int(0.8 * W_WIDTH), int(0.15 * W_HEIGHT)],
               "button pva": [int(0.8 * W_WIDTH), int(0.15 * W_HEIGHT)],
@@ -40,6 +43,36 @@ CHARACTERS = {"character 1":{"name":"Elon Musk", "file":"assets/pixel_elon.png",
               "character 4":{"name":"Matthieu David", "file":"assets/pixel_mdavid.png", "check": False},
               "character 5":{"name":"Pierre Peigne", "file":"assets/pixel_ppeigne.png", "check": False},
               "character 6":{"name":"Richard Feynman", "file":"assets/pixel_feynman.png", "check": False},}
+
+assets = {"button back": "assets/BACK.png",
+          "button play": "assets/PLAY.png",
+          "button pva": "assets/Player_vs_IA.png",
+          "button pvp": "assets/Player_vs_Player.png",
+          "button quit": "assets/QUIT.png",
+          "button backward": "assets/BACKWARD.png",
+          "button forward": "assets/FORWARD.png",
+          "img_0": "assets/0.png",
+          "img_1": "assets/1.png",
+          "img_2": "assets/2.png",
+          "img_3": "assets/3.png",
+          "img_4": "assets/4.png",
+          "img_5": "assets/5.png",
+          "img_board": "assets/board.png",
+          "img_chrct_select": "assets/character_selection.png",
+          "img_gomoku": "assets/Gomoku.png",
+          "img_player1": "assets/Player1.png",
+          "img_player2": "assets/Player2.png",
+          "img_score": "assets/Pairs.png",
+          "chr_Elon": "assets/pixel_elon.png",
+          "chr_Feynman": "assets/pixel_feynman.png",
+          "chr_Lee_Sedol": "assets/pixel_lee_sedol.png",
+          "chr_Sophie": "assets/pixel_sophie.png",
+          "chr_Mdavid": "assets/pixel_mdavid.png",
+          "chr_Ppeigne": "assets/pixel_ppeigne.png",
+          "white_stone": "assets/stone_white.png",
+          "black_stone": "assets/stone_black.png",
+          "timer": "assets/time.png"
+          }
 
 dct_stylesheet = {"menu_button": "*{border: 4px solid '#1B5DBF';" +
                                  "border-radius: 35px;" +
@@ -75,30 +108,44 @@ dct_stylesheet = {"menu_button": "*{border: 4px solid '#1B5DBF';" +
                                 "color: white;" +
                                 "padding: 0px 0px;" +
                                 "margin: 0px 0px;}" +
-                                "*:hover{background: 'red';}"}
+                                "*:hover{background: 'red';}",
+                 "backwrd_btn": "*{background: '#0B3D6F';" +
+                                "border-radius: 20px;" +
+                                "font-size: 20px;" +
+                                "color: white;" +
+                                "padding: 0px 0px;" +
+                                "margin: 0px 0px;}" +
+                                "*:hover{background: '#33B8FF';}",
+                 "forwrd_btn": "*{background: '#48BCD7';" +
+                                "border-radius: 20px;" +
+                                "font-size: 20px;" +
+                                "color: white;" +
+                                "padding: 0px 0px;" +
+                                "margin: 0px 0px;}" +
+                                "*:hover{background: '#ABE1ED';}"}
 
 nodes_x , nodes_y = 31 * np.arange(1, 20), 31 * np.arange(1, 20)
 coords = np.array(np.meshgrid(nodes_x, nodes_y)).T.reshape(-1,2)
-
-
-board = np.zeros((19, 19))
 
 # =========================================================================== #
 # ___________________________    |FUNCTIONS|     ____________________________ #
 # =========================================================================== #
 
-def nearest_coord(point:npt.NDArray[np.int_]) -> npt.NDArray[np.int_]:
-    ii = point[0] / 31.
-    jj = point[1] / 31.
-    if fabs(point[0] - ii * 31) >  fabs(point[0] - (ii + 1) * 31):
+def nearest_coord(point:np.array) -> np.array:
+    trsl_pt = point - np.array([TOP_LEFT_X, TOP_LEFT_Y])
+    ii = trsl_pt[0] // 31
+    jj = trsl_pt[1] // 31
+    if fabs(trsl_pt[0] - ii * 31) >  fabs(trsl_pt[0] - (ii + 1) * 31):
         ii += 1
-    if fabs(point[1] - jj * 31) >  fabs(point[1] - (jj + 1) * 31):
+    if fabs(trsl_pt[1] - jj * 31) >  fabs(trsl_pt[1] - (jj + 1) * 31):
         jj += 1
-    return np.array([int(ii) * 31, int(jj) * 31]) 
+    return np.array([ii * 31, jj * 31]) 
 
 
-def stone_to_board(coord:Tuple[int, int], color:int):
-    board[(coord[1] // 31) - 1, (coord[0] // 31) - 1] = color
+def stone_to_board(coord:Tuple[int, int], color:int, grid:np.array):
+    arr_idx = np.array([(coord[1] // 31) - 1, (coord[0] // 31) - 1])
+    grid[arr_idx[0], arr_idx[1]] = color
+    return arr_idx
 
 
 # =========================================================================== #
@@ -115,34 +162,47 @@ class MyWindow(QWidget):
         self.setStyleSheet("background: #152338;")
 
         # Widgets which matter for the update of the board (np.array)
-        self.stone = 1 # 1 is white and -1 is black
-        self.whitestone = []
-        self.blackstone = []
+        self.stone = BLACK # 1 is black and -1 is white
+        self.W_whitestones = []
+        self.W_blackstones = []
+        self.coord_whitestones = []
+        self.coord_blackstones = []
+        self.suggested_stone = None
 
         # Related to character selection on screen 2
         self.player_1 = None
         self.player_2 = None
+        self.p1_type = None
+        self.p2_type = None
         
         # Multi screen in the window related widget
-        self.stack1 = QWidget()
-        self.stack2 = QWidget()
-        self.stack3 = QWidget()
+        self.stack1 = QWidget(self)
+        self.stack2 = QWidget(self)
+        self.stack3 = QWidget(self)
         self.stack1UI()
         self.stack2UI()
         self.stack3UI()
-        self.Stack = QStackedWidget (self)
-        self.Stack.addWidget (self.stack1)
-        self.Stack.addWidget (self.stack2)
-        self.Stack.addWidget (self.stack3)
+        self.Stack = QStackedWidget(self)
+        self.Stack.addWidget(self.stack1)
+        self.Stack.addWidget(self.stack2)
+        self.Stack.addWidget(self.stack3)
+        
+        # Timer related
+        self.count_black = 0
+        self.count_white = 0
+                
+        # move suggestion related
+        self.move_suggest_p1 = False
+        self.move_suggest_p2 = False
 
 
     def stack1UI(self):
         # -------- MAIN MENU FRAME -------- #
         # Label (logo) widget
-        image_main = QPixmap("assets/Gomoku.png")
+        image_main = QPixmap(assets["img_gomoku"])
         self.wdgts_UI1 = {"header": QLabel(),
-                          "button pvp": QPushButton("", self),
-                          "button pva": QPushButton("", self)
+                          "button pvp": QPushButton("", self.stack1),
+                          "button pva": QPushButton("", self.stack1)
                           }
         
         self.wdgts_UI1["header"].setPixmap(image_main)
@@ -151,9 +211,9 @@ class MyWindow(QWidget):
         self.wdgts_UI1["header"].resize(*WIDGETS_WH["stack1_logo"])
 
         # Button widgets
-        for key, fname in zip(["button pvp", "button pva"], ["Player_vs_Player", "Player_vs_IA"]):
+        for key in ["button pvp", "button pva"]:
             self.wdgts_UI1[key].setStyleSheet(dct_stylesheet["menu_button"])
-            self.wdgts_UI1[key].setIcon(QtGui.QIcon(f'assets/{fname}.png'))
+            self.wdgts_UI1[key].setIcon(QtGui.QIcon(assets[key]))
             self.wdgts_UI1[key].setIconSize(QtCore.QSize(640,50))
             self.wdgts_UI1[key].resize(*WIDGETS_WH[key])
             self.wdgts_UI1[key].setCursor(QCursor(QtCore.Qt.PointingHandCursor))
@@ -176,21 +236,25 @@ class MyWindow(QWidget):
         layout.addStretch(1)
         self.stack1.setLayout(layout)
         self.stack1.setLayout(vlayout)
-
-
+        
 
     def stack2UI(self):
         # -------- SELECT PERSO FRAME -------- #
         self.wdgts_UI2 = {"header": QLabel(),
-                          "character 1": QPushButton("", self),
-                          "character 2": QPushButton("", self),
-                          "character 3": QPushButton("", self),
-                          "character 4": QPushButton("", self),
-                          "character 5": QPushButton("", self),
-                          "character 6": QPushButton("", self),
-                          "button play": QPushButton("", self),
-                          "button back": QPushButton("", self)
+                          "character 1": QPushButton("", self.stack2),
+                          "character 2": QPushButton("", self.stack2),
+                          "character 3": QPushButton("", self.stack2),
+                          "character 4": QPushButton("", self.stack2),
+                          "character 5": QPushButton("", self.stack2),
+                          "character 6": QPushButton("", self.stack2),
+                          "button play": QPushButton("", self.stack2),
+                          "button back": QPushButton("", self.stack2)
                           }
+        self.wdgts_UI2["move suggest 1"] = QCheckBox("", self.stack2)
+        self.wdgts_UI2["move suggest 2"] = QCheckBox("", self.stack2)
+        self.wdgts_UI2["move suggest 1"].setEnabled(False)
+        self.wdgts_UI2["move suggest 2"].setEnabled(False)
+        
         # Display logo
         image_select = QPixmap("assets/character_selection.png")
         self.wdgts_UI2["header"].setPixmap(image_select)
@@ -204,7 +268,6 @@ class MyWindow(QWidget):
             self.wdgts_UI2[f"character {ii}"].setCursor(QCursor(QtCore.Qt.PointingHandCursor))
             self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
             self.wdgts_UI2[f"character {ii}"].setFixedSize(QtCore.QSize(*WIDGETS_WH["wdgt_character"]))
-
         
         for key, fname in zip(["play", "back"], ["PLAY", "BACK"]):
             self.wdgts_UI2[f"button {key}"].setIcon(QtGui.QIcon(f'assets/{fname}.png'))
@@ -212,19 +275,26 @@ class MyWindow(QWidget):
             self.wdgts_UI2[f"button {key}"].setStyleSheet(dct_stylesheet[f"{key}_btn"])
             self.wdgts_UI2[f"button {key}"].setFixedSize(210, 70)
         
-
+        self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 1"].setIconSize(QtCore.QSize(80, 67))
+        self.wdgts_UI2["move suggest 1"].setFixedSize(90, 70)
+        self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 2"].setIconSize(QtCore.QSize(80, 67))
+        self.wdgts_UI2["move suggest 2"].setFixedSize(90, 70)
+        
         # Placing all the widgets in the select character frame:
-        grid = QGridLayout()
-        grid.addWidget(self.wdgts_UI2["header"], 0, 0, 1, 6, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["character 1"], 1, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
-        grid.addWidget(self.wdgts_UI2["character 2"], 1, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["character 3"], 1, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI2["character 4"], 3, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
-        grid.addWidget(self.wdgts_UI2["character 5"], 3, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["character 6"], 3, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI2["button play"], 5, 4, 1, 2, alignment=QtCore.Qt.AlignCenter)
-        grid.addWidget(self.wdgts_UI2["button back"], 5, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
-
+        self.grid2 = QGridLayout()
+        self.grid2.addWidget(self.wdgts_UI2["header"], 0, 0, 1, 6, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["character 1"], 1, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
+        self.grid2.addWidget(self.wdgts_UI2["character 2"], 1, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["character 3"], 1, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
+        self.grid2.addWidget(self.wdgts_UI2["character 4"], 3, 0, 2, 2, alignment=QtCore.Qt.AlignRight)
+        self.grid2.addWidget(self.wdgts_UI2["character 5"], 3, 2, 2, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["character 6"], 3, 4, 2, 2, alignment=QtCore.Qt.AlignLeft)
+        self.grid2.addWidget(self.wdgts_UI2["move suggest 1"], 5, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["move suggest 2"], 5, 3, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["button play"], 5, 4, 2, 2, alignment=QtCore.Qt.AlignCenter)
+        self.grid2.addWidget(self.wdgts_UI2["button back"], 5, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
 
         self.wdgts_UI2["character 1"].clicked.connect(self.select_character_1)
         self.wdgts_UI2["character 2"].clicked.connect(self.select_character_2)
@@ -232,40 +302,68 @@ class MyWindow(QWidget):
         self.wdgts_UI2["character 4"].clicked.connect(self.select_character_4)
         self.wdgts_UI2["character 5"].clicked.connect(self.select_character_5)
         self.wdgts_UI2["character 6"].clicked.connect(self.select_character_6)
+        self.wdgts_UI2["move suggest 1"].clicked.connect(self.game_move_suggest_1)
+        self.wdgts_UI2["move suggest 2"].clicked.connect(self.game_move_suggest_2)
         self.wdgts_UI2["button play"].clicked.connect(self.game_play)
         self.wdgts_UI2["button back"].clicked.connect(self.game_back)
 
-        self.stack2.setLayout(grid)
+        self.stack2.setLayout(self.grid2)
+
 
     def stack3UI(self):
         # -------- GAME FRAME -------- #
-        self.wdgts_UI3 = {"header": QLabel(),
-                          "board": QLabel(),
-                          "label p1": QLabel(),
-                          "label p2": QLabel(),
-                          "label score p1": QLabel(),
-                          "label score p2": QLabel(),
-                          "score p1": QLabel(),
-                          "score p2": QLabel(),
-                          "button quit": QPushButton("")
+        self.wdgts_UI3 = {"board": QLabel(self.stack3),
+                          "label p1": QLabel(self.stack3),
+                          "label p2": QLabel(self.stack3),
+                          "label score p1": QLabel(self.stack3),
+                          "label score p2": QLabel(self.stack3),
+                          "score p1": QLabel(self.stack3),
+                          "score p2": QLabel(self.stack3),
+                          "button quit": QPushButton("",self.stack3),
+                          "button backward": QPushButton("",self.stack3),
+                          "button forward": QPushButton("",self.stack3),
+                          "label timer 1": QLabel(self.stack3),
+                          "label timer 2": QLabel(self.stack3),
+                          "display timer 1": QLabel("  00.00 s", self.stack3),
+                          "display timer 2": QLabel("  00.00 s", self.stack3),
+                          "timer 1": QTimer(self.stack3),
+                          "timer 2": QTimer(self.stack3),
                           }
         # Display logo
-        img_board = QPixmap("assets/board.png")
+        img_board = QPixmap(assets["img_board"])
         img_board = img_board.scaled(606, 606)
         self.wdgts_UI3["board"].setPixmap(img_board)
 
-        self.wdgts_UI3["label p1"].setPixmap(QPixmap("assets/Player1.png"))
-        self.wdgts_UI3["label p2"].setPixmap(QPixmap("assets/Player2.png"))
-        self.wdgts_UI3["label score p1"].setPixmap(QPixmap("assets/Score.png"))
-        self.wdgts_UI3["label score p2"].setPixmap(QPixmap("assets/Score.png"))
-        self.wdgts_UI3["score p1"].setPixmap(QPixmap("assets/0.png"))
-        self.wdgts_UI3["score p2"].setPixmap(QPixmap("assets/0.png"))
+        self.wdgts_UI3["label p1"].setPixmap(QPixmap(assets["img_player1"]))
+        self.wdgts_UI3["label p2"].setPixmap(QPixmap(assets["img_player2"]))
+        self.wdgts_UI3["label score p1"].setPixmap(QPixmap(assets["img_score"]))
+        self.wdgts_UI3["label score p2"].setPixmap(QPixmap(assets["img_score"]))
+        self.wdgts_UI3["score p1"].setPixmap(QPixmap(assets["img_0"]))
+        self.wdgts_UI3["score p2"].setPixmap(QPixmap(assets["img_0"]))
 
-        self.wdgts_UI3["button quit"].setIcon(QtGui.QIcon('assets/QUIT.png'))
+        self.wdgts_UI3["button quit"].setIcon(QtGui.QIcon(assets["button quit"]))
         self.wdgts_UI3["button quit"].setIconSize(QtCore.QSize(203,67))
         self.wdgts_UI3["button quit"].setStyleSheet(dct_stylesheet["back_btn"])
         self.wdgts_UI3["button quit"].clicked.connect(self.game_quit)
 
+        self.wdgts_UI3["button backward"].setIcon(QtGui.QIcon(assets["button backward"]))
+        self.wdgts_UI3["button backward"].setIconSize(QtCore.QSize(203,67))
+        self.wdgts_UI3["button backward"].setStyleSheet(dct_stylesheet["backwrd_btn"])
+        self.wdgts_UI3["button backward"].clicked.connect(self.game_backward)
+
+        self.wdgts_UI3["button forward"].setIcon(QtGui.QIcon(assets["button forward"]))
+        self.wdgts_UI3["button forward"].setIconSize(QtCore.QSize(203,67))
+        self.wdgts_UI3["button forward"].setStyleSheet(dct_stylesheet["forwrd_btn"])
+        self.wdgts_UI3["button forward"].clicked.connect(self.game_forward)
+
+        self.wdgts_UI3["label timer 1"].setPixmap(QPixmap(assets["timer"]))
+        self.wdgts_UI3["label timer 2"].setPixmap(QPixmap(assets["timer"]))
+        self.wdgts_UI3["display timer 1"].setStyleSheet("*{font-size: 24px; color: White;}")
+        self.wdgts_UI3["display timer 2"].setStyleSheet("*{font-size: 24px; color: White;}")
+        
+        self.wdgts_UI3["timer 1"].timeout.connect(self.showtime_timer1)
+        self.wdgts_UI3["timer 2"].timeout.connect(self.showtime_timer2)
+        
         self.wdgts_UI3["board"].adjustSize()
         self.wdgts_UI3["label p1"].adjustSize()
         self.wdgts_UI3["label p2"].adjustSize()
@@ -273,17 +371,25 @@ class MyWindow(QWidget):
         self.wdgts_UI3["label score p2"].adjustSize()
         self.wdgts_UI3["score p1"].adjustSize()
         self.wdgts_UI3["score p2"].adjustSize()
+        self.wdgts_UI3["label timer 1"].adjustSize()
+        self.wdgts_UI3["label timer 2"].adjustSize()
 
         # Placing all the widgets in the main menu frame:
         grid = QGridLayout()
-        grid.addWidget(self.wdgts_UI3["board"], 0, 0, 4, 4)
-        grid.addWidget(self.wdgts_UI3["label p1"], 0, 5, 1, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["label score p1"], 1, 5, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["score p1"], 1, 6)
-        grid.addWidget(self.wdgts_UI3["label p2"], 2, 5, 1, 2, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["label score p2"], 3, 5, alignment=QtCore.Qt.AlignLeft)
-        grid.addWidget(self.wdgts_UI3["score p2"], 3, 6)
-        grid.addWidget(self.wdgts_UI3["button quit"], 4, 2, 1, 2)
+        grid.addWidget(self.wdgts_UI3["label p1"], 0, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
+        grid.addWidget(self.wdgts_UI3["label score p1"], 1, 0, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["score p1"], 1, 1, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["label timer 1"], 2, 0, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["display timer 1"], 2, 1, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["label p2"], 0, 3, 1, 2, alignment=QtCore.Qt.AlignCenter)
+        grid.addWidget(self.wdgts_UI3["label score p2"], 1, 3, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["score p2"], 1, 4, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["label timer 2"], 2, 3, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["display timer 2"], 2, 4, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["board"], 3, 1, 4, 4, alignment=QtCore.Qt.AlignLeft)
+        grid.addWidget(self.wdgts_UI3["button quit"], 8, 1)
+        grid.addWidget(self.wdgts_UI3["button backward"], 8, 2)
+        grid.addWidget(self.wdgts_UI3["button forward"], 8, 3)
         self.stack3.setLayout(grid)
 
 
@@ -292,23 +398,111 @@ class MyWindow(QWidget):
 
 
     def game_pvp(self):
+        self.p1_type = "Human"
+        self.p2_type = "Human"
+        self.wdgts_UI2["move suggest 1"].setEnabled(True)
+        self.wdgts_UI2["move suggest 2"].setEnabled(True)
         self.Stack.setCurrentIndex(1)
 
 
+    def game_move_suggest_1(self):
+        if self.move_suggest_p1 == False:
+            self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/pixel_hal-removebg.png"))
+            self.move_suggest_p1 = True
+        else:
+            self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+            self.move_suggest_p1 = False
+
+
+    def game_move_suggest_2(self):
+        if self.move_suggest_p2 == False:
+            self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/pixel_hal-removebg.png"))
+            self.move_suggest_p2 = True
+        else:
+            self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+            self.move_suggest_p2 = False
+
+
     def game_pva(self):
+        self.p1_type = "Human"
+        self.p2_type = "IA"
+        self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 1"].setEnabled(False)
+        self.wdgts_UI2["move suggest 1"].setChecked(False)
+        self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 2"].setEnabled(False)
+        self.wdgts_UI2["move suggest 2"].setChecked(False)
         self.Stack.setCurrentIndex(1)
 
 
     def game_back(self):
+        self.p1_type = None
+        self.p2_type = None
+        self.player_1 = None
+        self.player_2 = None
+        for ii in range(1,7):
+            CHARACTERS[f"character {ii}"]["check"] = False
+            self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
+        
+        self.wdgts_UI2["move suggest 1"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 1"].setChecked(False)
+        self.wdgts_UI2["move suggest 2"].setIcon(QtGui.QIcon("assets/gray_pixel_hal-removebg.png"))
+        self.wdgts_UI2["move suggest 2"].setChecked(False)
+        self.move_suggest_p1 = False
+        self.move_suggest_p2 = False
         self.Stack.setCurrentIndex(0)
 
+
     def game_quit(self):
+        self.p1_type = None
+        self.p2_type = None
+        self.player_1 = None
+        self.player_2 = None
+        
+        for ii in range(1,7):
+            CHARACTERS[f"character {ii}"]["check"] = False
+            self.wdgts_UI2[f"character {ii}"].setStyleSheet(dct_stylesheet["character"])
+        
+        for ii in range(len(self.W_whitestones)):
+            self.W_whitestones[ii].deleteLater()
+        for ii in range(len(self.W_blackstones)):
+            self.W_blackstones[ii].deleteLater()
+        del(self.W_whitestones)
+        del(self.W_blackstones)
+        self.W_whitestones = []
+        self.W_blackstones = []
+
         self.Stack.setCurrentIndex(0)
 
 
     def game_play(self):
         if (self.player_1 != None) and (self.player_2 != None):
+            self.wdgts_UI3["timer 1"].start(10)
             self.Stack.setCurrentIndex(2)
+
+
+    def game_backward(self):
+        raise NotImplementedError()
+
+
+    def game_forward(self):
+        raise NotImplementedError()
+
+
+    def game_score(self):
+        raise NotImplementedError()
+
+
+    def showtime_timer1(self):
+        if self.wdgts_UI3["timer 1"].isActive():
+            self.count_black += 10
+            # getting and displaying text from count
+            self.wdgts_UI3["display timer 1"].setText(f"{self.count_black * MSEC_2_SEC:.2f}  s")
+
+    def showtime_timer2(self):
+        if self.wdgts_UI3["timer 2"].isActive():
+            self.count_white += 10
+            self.wdgts_UI3["display timer 2"].setText(f"{self.count_white * MSEC_2_SEC:.2f}  s")
 
 
     def select_character_1(self):
@@ -425,38 +619,7 @@ class MyWindow(QWidget):
             self.wdgts_UI2["character 6"].setStyleSheet(dct_stylesheet["character"])
 
     def mousePressEvent(self, event):
-        def on_board(qpoint):
-            x, y = qpoint.x(), qpoint.y()
-            if (x >= 25) and (x <= 603) and (y >= 25) and (y <= 603):
-                return True
-            return False
-
-
-        if (self.Stack.currentIndex() == 2) and on_board(event.pos()) and (event.buttons() == QtCore.Qt.LeftButton):
-            current_stone =  QLabel("", self.wdgts_UI3["board"])
-            current_stone.setStyleSheet("background-color: transparent;")
-            # Creer un evenement de placement pour qu'il puisse etre appelé par l'algo
-            if self.stone == 1:
-                px_stone = QPixmap("assets/stone_white.png")
-                px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-                current_stone.setPixmap(px_stone)
-                self.whitestone.append(current_stone)
-            else:
-                px_stone = QPixmap("assets/stone_black.png")
-                px_stone = px_stone.scaled(26, 26, QtCore.Qt.KeepAspectRatio)
-                current_stone.setPixmap(px_stone)
-                self.blackstone.append(current_stone)
-
-            print(f"coordinates mouse: {event.pos().x()}, {event.pos().y()}")
-            nearest = nearest_coord(np.array([event.pos().x(), event.pos().y()]))
-            #print(nearest)
-            
-            stone_to_board(nearest, self.stone)
-            self.stone = - self.stone
-            #print(board)
-            current_stone.move(int(1.02 * nearest[0]) - 26, int(1.02 * nearest[1]) - 26)
-            #self.stack3.addWidget(current_stone)
-            current_stone.show()
+        raise NotImplementedError()
 
 
 def window(mywindow:MyWindow):

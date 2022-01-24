@@ -48,7 +48,7 @@ def get_kern_diag_idx(pos: Tuple[int,int], slope:Tuple(int, int) = 1, length: in
 
 
 # @njit(parallel=True, fastmath=True)
-def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tuple[int, int]], KernelOutput]) -> int: # FIXME:  typage 
+def measure_sequence(grid: np.ndarray, color: int, position: Tuple[int, int], get_kernel_idx: Callable[[Tuple[int, int]], KernelOutput]) -> int: # FIXME:  typage 
     """[summary]
 
     Args:
@@ -72,24 +72,24 @@ def measure_sequence(grid: np.ndarray, color: int, get_kernel_idx: Callable[[Tup
             i += 1
     return max(res)
 
-def measure_row(grid: np.ndarray, color: int) -> int:
-    return measure_sequence(grid, color, get_kern_row_idx)
+def measure_row(grid: np.ndarray, position: Tuple[int, int], color: int) -> int:
+    return measure_sequence(grid, position, color, get_kern_row_idx)
 
-def measure_col(grid: np.ndarray, color: int) -> int:
-    return measure_sequence(grid, color, get_kern_col_idx)
+def measure_col(grid: np.ndarray, position: Tuple[int, int], color: int) -> int:
+    return measure_sequence(grid, position, color, get_kern_col_idx)
 
-def measure_diag(grid: np.ndarray, color: int, left: bool) -> int:
+def measure_diag(grid: np.ndarray, position: Tuple[int, int], color: int, left: bool) -> int:
     if left:
-        return measure_sequence(grid, color, get_kern_diag_idx)
+        return measure_sequence(grid, position, color, get_kern_diag_idx)
     else:
-        return measure_sequence(np.fliplr(grid), color, get_kern_diag_idx)
+        return measure_sequence(np.fliplr(grid), position, color, get_kern_diag_idx)
 
-def collect_sequences(grid: np.ndarray, color: int) -> int:
+def collect_sequences(grid: np.ndarray, position: Tuple[int,int], color: int) -> int:
     sequences = []
-    sequences.append(measure_row(grid, color))
-    sequences.append(measure_col(grid, color))
-    sequences.append(measure_diag(grid, color, True))
-    sequences.append(measure_diag(np.fliplr(grid), color, False))
+    sequences.append(measure_row(grid, position, color))
+    sequences.append(measure_col(grid, position, color))
+    sequences.append(measure_diag(grid, position, color, True))
+    sequences.append(measure_diag(np.fliplr(grid), position, color, False))
     return max(sequences)
 
 
