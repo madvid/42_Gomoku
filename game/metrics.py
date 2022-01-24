@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Tuple, Callable
 import numpy as np
 from functools import partial
-from numba import njit
+#from numba import njit
 
 
 # Typing related (type aliases, NewType, ...)
