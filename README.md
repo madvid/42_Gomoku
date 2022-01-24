@@ -16,7 +16,7 @@ Gomoku is a game which is played on Go board. The objectives of the project is t
 
 	# Via conda:
 	> conda conda create -n v_gomoku python=3.7
-	> conda activate v_gomoku --file requirements.txt
+	> conda activate v_gomoku --file conda_requirements.txt
 	```
 * Create a symbolik link at the root of this repository (right after you did `cd 42_gomoku`) to link the assets:
 	```Bash
@@ -50,7 +50,7 @@ In the context of this project, you will play with the following additional rule
   There is no need for the game to go on if there is no possibility of this happening.
 * No double-threes : It is forbidden to play a move that introduces two free-three alignments, which would guarantee a win by alignment (See the appendix).
 
-See ```gomoku.pdf``` file in the folder **doc_assets** for more details about the game, what is expected and details about capture.
+See ```gomoku.pdf``` file in the folder **[doc_assets](https://github.com/madvid/42_Gomoku/tree/master/doc_assets)** for more details about the game, what is expected and details about capture.
 
 ---
 ## Algorithm Minmax and its variants:
